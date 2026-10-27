@@ -126,6 +126,18 @@ ctest --test-dir build
 build/platform/beese-blackjack
 ```
 
+## Measured on the cabinet
+
+Pi 4, 3440x1440 display, everything on (docs/PLATFORM.md section 9b):
+
+| | measured | budget |
+|---|---|---|
+| attract, lobby, a full table, the HONEY POT takeover | 60 fps, 1% low 58.8-59.1, at most 1 missed frame a minute | 1% low >= 55 |
+| memory | 83-86 MB in every mode | <= 150 MB |
+| textures | 43 MB | <= 64 MB |
+| draw calls | 6-8 a frame | < 100 |
+| start to attract | 1.2 s warm; 4.5 s from a cold page cache | <= 4 s |
+
 ## Documentation
 
 - [docs/SPEC.md](docs/SPEC.md): what the game is, its rules and its returns

@@ -2,10 +2,9 @@
 # Platform: build, run, measure, plug in
 
 > This platform layer came from Beese's Poker Lounge unchanged apart from
-> the game modes. Sections 9 and 9a are Poker Lounge's measurements on the
-> cabinet with this same platform; Blackjack's own numbers are to be measured
-> there (tools/cabinet_systems_check.sh), and the poker modes named below
-> (draw, holdem) are now the one `table` mode.
+> the game modes (the poker modes named below, draw and holdem, are now the
+> one `table` mode). Sections 9 and 9a are Poker Lounge's measurements;
+> Blackjack's own are in section 9b.
 
 The platform is the executable `beese-blackjack`: display bring-up, the fixed-step
 main loop, input, the app state machine, the F1 overlay, the texture registry
@@ -404,6 +403,30 @@ Other fixes found on the cabinet:
   `tools/raylib-5.5-ssh-keyboard.patch` bounds it.
 - raylib's Makefile adds no `-O` for PLATFORM_DRM; `fetch_raylib.sh` now
   builds every variant with `-O2`.
+
+## 9b. Beese's Blackjack on the cabinet (2026-10-27)
+
+Pi 4, the real 3440x1440 display (play space 2x, display-plane scaling),
+everything on, `--perf-csv` with the first 60 frames skipped
+(tools/perf_summary.py). The table runs with the four regulars and the
+player standing every round (`--script`); the takeover is `BJ_TAKEOVER=1`,
+the HONEY POT takeover replayed over the live table.
+
+| scene | frames | mean ms | 1% low fps | missed vblanks | render ms mean / max | draw calls |
+|---|---|---|---|---|---|---|
+| attract (title + demo) | 3540 | 16.674 | 58.82 | 1 | 3.22 / 18.6 | 6 |
+| lobby | 540 | 16.674 | 58.98 | 0 | 3.68 / 11.4 | 6 |
+| table, five seats | 3540 | 16.674 | 59.06 | 1 | 4.56 / 12.2 | 7 |
+| HONEY POT takeover | 1740 | 16.674 | 58.76 | 0 | 5.81 / 12.9 | 8 |
+
+- Memory: RSS 83.3-85.6 MB in every mode; textures 43.04 MB.
+- Start: 1.18 s from exec to the first attract frame through the RetroPie
+  launcher (warm); **4.54 s from a dropped page cache**, of which InitWindow
+  (Mesa loading from the SD card) is 3.54 s - over the 4 s budget, the same
+  cause as Poker Lounge's thin margin. Not a game cost: platform init 48 ms,
+  modes init 556 ms, first frame 188 ms.
+- The RetroPie round trip (launcher, runcommand, SELECT+START out, ES back):
+  OK, 11.2 s. Saves: 0.2-0.5 ms per write in these runs.
 
 ## 10. Placeholders and open points
 
