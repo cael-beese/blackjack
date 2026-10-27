@@ -51,9 +51,6 @@ const uint16_t settings_denoms[] = { 1, 5, 10, 25, 50, 100 };
 const int settings_ndenoms = (int)(sizeof settings_denoms / sizeof settings_denoms[0]);
 const uint16_t settings_coins[] = { 25, 100, 200, 500, 1000, 2000 };
 const int settings_ncoins = (int)(sizeof settings_coins / sizeof settings_coins[0]);
-const uint32_t settings_buyins[] = { 20, 50, 100, 200, 500, 1000 };
-const int settings_nbuyins = (int)(sizeof settings_buyins / sizeof settings_buyins[0]);
-
 void settings_defaults(Settings *s)
 {
     memset(s, 0, sizeof *s);
@@ -61,12 +58,10 @@ void settings_defaults(Settings *s)
     s->vol_music = 6;
     s->vol_sfx = 10;
     s->music_on = 1;
-    s->difficulty = 1;          /* AI_DIFF_NORMAL */
     s->hint_default = 0;
-    s->double_up = 1;
+    s->regulars = 1;
     s->denom_cents = 25;
     s->coin_cents = 100;        /* one press = $1 = 4 credits at 25c */
-    s->holdem_buyin = 100;
     effects_defaults(&s->effects);
 }
 
@@ -83,15 +78,6 @@ int64_t settings_coin_credits(const Settings *s)
     return n < 1 ? 1 : n;
 }
 
-int64_t sng_prize(int64_t buyin, int place)
-{
-    switch (place) {
-    case 1: return buyin * 3;
-    case 2: return buyin * 9 / 5;
-    case 3: return buyin * 6 / 5;
-    default: return 0;
-    }
-}
 
 /* ---- the key table ------------------------------------------------------- */
 
@@ -113,37 +99,34 @@ static const Field k_fields[] = {
     F("set.vol_music",         T_U8,  settings.vol_music, 0, 10),
     F("set.vol_sfx",           T_U8,  settings.vol_sfx, 0, 10),
     F("set.music_on",          T_U8,  settings.music_on, 0, 1),
-    F("set.difficulty",        T_U8,  settings.difficulty, 0, 3),
+    F("honey_pot",             T_I64, honey_pot, 0, INT64_C(1000000000000)),
     F("set.hint_default",      T_U8,  settings.hint_default, 0, 1),
-    F("set.double_up",         T_U8,  settings.double_up, 0, 1),
+    F("set.regulars",          T_U8,  settings.regulars, 0, 1),
     F("set.denom_cents",       T_U16, settings.denom_cents, 1, 10000),
     F("set.coin_cents",        T_U16, settings.coin_cents, 1, 60000),
-    F("set.holdem_buyin",      T_U32, settings.holdem_buyin, 5, 1000000),
-    FN("stats.draw_hands.job", T_U64, stats.draw_hands[0]),
-    FN("stats.draw_hands.bonus", T_U64, stats.draw_hands[1]),
-    FN("stats.draw_hands.deuces", T_U64, stats.draw_hands[2]),
-    FN("stats.draw_bet.job", T_U64, stats.draw_bet[0]),
-    FN("stats.draw_bet.bonus", T_U64, stats.draw_bet[1]),
-    FN("stats.draw_bet.deuces", T_U64, stats.draw_bet[2]),
-    FN("stats.draw_paid.job", T_U64, stats.draw_paid[0]),
-    FN("stats.draw_paid.bonus", T_U64, stats.draw_paid[1]),
-    FN("stats.draw_paid.deuces", T_U64, stats.draw_paid[2]),
-    FN("stats.royals", T_U64, stats.royals),
-    FN("stats.four_deuces", T_U64, stats.four_deuces),
-    FN("stats.dbl_played", T_U64, stats.dbl_played),
-    FN("stats.dbl_won", T_U64, stats.dbl_won),
+    FN("stats.rounds", T_U64, stats.rounds),
+    FN("stats.hands", T_U64, stats.hands),
+    FN("stats.wagered", T_U64, stats.wagered),
+    FN("stats.paid", T_U64, stats.paid),
+    FN("stats.blackjacks", T_U64, stats.blackjacks),
+    FN("stats.doubles", T_U64, stats.doubles),
+    FN("stats.splits", T_U64, stats.splits),
+    FN("stats.surrenders", T_U64, stats.surrenders),
+    FN("stats.insured", T_U64, stats.insured),
+    FN("stats.wins", T_U64, stats.wins),
+    FN("stats.pushes", T_U64, stats.pushes),
+    FN("stats.losses", T_U64, stats.losses),
+    FN("stats.pp_bet", T_U64, stats.side_bet[0]),
+    FN("stats.pp_paid", T_U64, stats.side_paid[0]),
+    FN("stats.pp_hits", T_U64, stats.side_hits[0]),
+    FN("stats.t213_bet", T_U64, stats.side_bet[1]),
+    FN("stats.t213_paid", T_U64, stats.side_paid[1]),
+    FN("stats.t213_hits", T_U64, stats.side_hits[1]),
+    FN("stats.honey_bet", T_U64, stats.side_bet[2]),
+    FN("stats.honey_paid", T_U64, stats.side_paid[2]),
+    FN("stats.honey_hits", T_U64, stats.side_hits[2]),
+    FN("stats.jackpots", T_U64, stats.jackpots),
     F("stats.biggest_win",       T_I64, stats.biggest_win, 0, INT64_C(1000000000000)),
-    FN("stats.holdem_hands", T_U64, stats.holdem_hands),
-    FN("stats.holdem_games", T_U64, stats.holdem_games),
-    FN("stats.holdem_wins", T_U64, stats.holdem_wins),
-    FN("stats.holdem_place1", T_U64, stats.holdem_places[0]),
-    FN("stats.holdem_place2", T_U64, stats.holdem_places[1]),
-    FN("stats.holdem_place3", T_U64, stats.holdem_places[2]),
-    FN("stats.holdem_place4", T_U64, stats.holdem_places[3]),
-    FN("stats.holdem_place5", T_U64, stats.holdem_places[4]),
-    FN("stats.holdem_place6", T_U64, stats.holdem_places[5]),
-    FN("stats.holdem_buyins", T_U64, stats.holdem_buyins),
-    FN("stats.holdem_prizes", T_U64, stats.holdem_prizes),
     FN("stats.coins_in", T_U64, stats.coins_in),
     FN("stats.credits_added", T_U64, stats.credits_added),
     FN("stats.credit_resets", T_U64, stats.credit_resets),

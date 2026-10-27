@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md
-# bpl_engine: cards, RNG, deck, evaluator, events, replay, fixed step.
+# bpl_engine: cards, RNG, deck, events, replay, fixed step.
 # Pure C11 + POSIX, no raylib, so tests and every game module can link it.
 file(GLOB BPL_ENGINE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 add_library(bpl_engine STATIC ${BPL_ENGINE_SOURCES})

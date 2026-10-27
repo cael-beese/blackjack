@@ -20,15 +20,15 @@ static const struct {
     uint32_t    held;      /* only after hold seconds held down        */
     int         hold;
 } k_fn[PF_COUNT] = {
-    { "HOLD1", "HOLD 1", BTN_HOLD1, 0, 0 },
-    { "HOLD2", "HOLD 2", BTN_HOLD2, 0, 0 },
-    { "HOLD3", "HOLD 3", BTN_HOLD3, 0, 0 },
-    { "HOLD4", "HOLD 4", BTN_HOLD4, 0, 0 },
-    { "HOLD5", "HOLD 5", BTN_HOLD5, 0, 0 },
+    { "HOLD1", "HIT", BTN_HOLD1, 0, 0 },
+    { "HOLD2", "STAND", BTN_HOLD2, 0, 0 },
+    { "HOLD3", "DOUBLE", BTN_HOLD3, 0, 0 },
+    { "HOLD4", "SPLIT", BTN_HOLD4, 0, 0 },
+    { "HOLD5", "SURRENDER", BTN_HOLD5, 0, 0 },
     { "DEAL", "DEAL", BTN_DEAL | BTN_OK, 0, 0 },
     { "COIN", "COIN", BTN_COIN, 0, 0 },
     { "CASH_OUT", "CASH OUT", BTN_CASH_OUT | BTN_BACK, BTN_SERVICE, 3 },
-    { "BET_ONE", "BET ONE", BTN_BET_ONE, 0, 0 },
+    { "BET_ONE", "BET MORE", BTN_BET_ONE, 0, 0 },
     { "BET_MAX", "BET MAX", BTN_BET_MAX, 0, 0 },
     { "START", "START", BTN_START, 0, 0 },
     { "SERVICE", "SERVICE", 0, BTN_SERVICE, 3 },

@@ -66,13 +66,14 @@ const AvatarRig *hart_rig(int who);
 unsigned         hart_table_tex(void);
 
 /* Table geometry the backdrop was painted with (the presentation's layout
- * follows it): a stadium centred at (HT_CX, HT_CY). */
-#define HT_CX 640.0f
-#define HT_CY 332.0f
-#define HT_HX 560.0f          /* half width, outer edge of the rail   */
-#define HT_HY 228.0f          /* half height                          */
-#define HT_RAIL 34.0f         /* rail width (brass + leather + brass) */
-#define HT_NEON 46.0f         /* the neon inlay, inside the outer edge */
-#define HT_BETLINE 116.0f     /* the betting line                      */
+ * follows it): a blackjack table, the lower half of an ellipse centred on the
+ * dealer's straight edge at (BT_CX, BT_CY), BT_A wide and BT_B deep to the
+ * outer edge of its padded rail. */
+#define BT_CX 640.0f
+#define BT_CY 70.0f           /* the dealer's straight edge              */
+#define BT_A 590.0f           /* half width to the rail's outer edge      */
+#define BT_B 540.0f           /* depth to the rail's outer edge           */
+#define BT_RAIL 34.0f         /* rail width (brass + leather + brass)   */
+#define BT_NEON 46.0f         /* the neon inlay, inside the outer edge  */
 
 #endif

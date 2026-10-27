@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md
-# platform/CMakeLists.txt - bpl_platform (library) and beese-poker (executable).
+# platform/CMakeLists.txt - bpl_platform (library) and beese-blackjack (executable).
 #
 # Included by the top-level CMakeLists.txt with add_subdirectory(platform),
 # after it has defined bpl_engine. Selects the raylib build that
@@ -57,17 +57,13 @@ endif()
 
 add_library(bpl_platform STATIC
   app.c
-  modes_placeholder.c
   mode_attract.c
   mode_menu.c
-  mode_draw.c
-  mode_holdem.c
+  mode_table.c
   service.c
   selftest.c
   session.c
-  placeholder_ui.c
-  placeholder_draw.c
-  placeholder_holdem.c
+  app_sound.c
   fx_settings.c
   gputest.c
   ini.c
@@ -91,10 +87,10 @@ target_compile_options(bpl_persist PRIVATE -Wall -Wextra -Werror)
 
 target_include_directories(bpl_platform PUBLIC "${BPL_ROOT}")
 target_link_libraries(bpl_platform PUBLIC bpl_engine bpl_raylib)
-# The real game modes (systems milestone): the games, the AI, audio, the save file.
+# The game modes: the blackjack table, audio, the save file.
 # bpl_audio calls raylib but does not link it, so the raylib archive has to come
 # after it again; named by path, as CMake would drop a repeat of the target.
-target_link_libraries(bpl_platform PUBLIC bpl_persist bpl_draw bpl_holdem bpl_ai bpl_audio
+target_link_libraries(bpl_platform PUBLIC bpl_persist bpl_blackjack bpl_audio
   "${BPL_RAYLIB_DIR}/lib/libraylib.a")
 target_compile_options(bpl_platform PRIVATE -Wall -Wextra -Werror)
 # _GNU_SOURCE for clock_gettime / getrandom / ioctl helpers under -std=c11.
@@ -122,14 +118,14 @@ endif()
 # app_modes.c (the mode table) belongs to the executable: it names modes from
 # libraries that depend on bpl_platform, which a static bpl_platform could
 # not reference without a link cycle.
-add_executable(beese-poker main.c app_modes.c)
-target_link_libraries(beese-poker PRIVATE bpl_platform)
+add_executable(beese-blackjack main.c app_modes.c)
+target_link_libraries(beese-blackjack PRIVATE bpl_platform)
 # The renderer (render/, added after this directory) brings the RENDERTEST mode.
 if(EXISTS "${BPL_ROOT}/render/CMakeLists.txt")
-  target_link_libraries(beese-poker PRIVATE bpl_render)
-  target_compile_definitions(beese-poker PRIVATE BPL_HAVE_RENDER=1)
+  target_link_libraries(beese-blackjack PRIVATE bpl_render)
+  target_compile_definitions(beese-blackjack PRIVATE BPL_HAVE_RENDER=1)
 endif()
-target_compile_options(beese-poker PRIVATE -Wall -Wextra -Werror)
+target_compile_options(beese-blackjack PRIVATE -Wall -Wextra -Werror)
 
 # The binary looks for config.ini next to itself first, so keep a copy there.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.ini" "${CMAKE_CURRENT_BINARY_DIR}/config.ini" COPYONLY)

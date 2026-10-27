@@ -8,14 +8,10 @@
 #include <string.h>
 #include <time.h>
 
-#include "ai/ai.h"
 #include "engine/card.h"
 #include "engine/deck.h"
-#include "engine/eval.h"
 #include "engine/rng.h"
-#include "games/draw/draw_hint.h"
-#include "games/draw/draw_rules.h"
-#include "games/holdem/holdem.h"
+#include "games/blackjack/bj_game.h"
 
 static double now_ms(void)
 {
@@ -38,111 +34,129 @@ void selftest_add(SelfTestReport *r, const char *name, int pass, double ms, cons
     va_end(ap);
 }
 
-/* "AsKsQsJsTs" -> five cards; 0 ok. */
-static int hand(const char *s, Card *out, int n)
+
+static Card C(const char *s)
 {
-    for (int i = 0; i < n; i++) {
-        char two[3] = { s[2 * i], s[2 * i + 1], 0 };
-        if (card_parse(two, &out[i]) != 0) return -1;
-    }
-    return 0;
+    Card c = CARD_NONE;
+    card_parse(s, &c);
+    return c;
 }
 
-static void check_eval(SelfTestReport *r)
+/* Hand totals and every side-bet outcome on known hands. */
+static void check_rules(SelfTestReport *r)
 {
     double t0 = now_ms();
-    eval_init();
-    static const struct { const char *h; int cat; } cases[] = {
-        { "AsKsQsJsTs", HC_STRAIGHT_FLUSH }, { "AsAhAdAc2s", HC_QUADS }, { "KsKhKd2c2s", HC_FULL_HOUSE },
-        { "2h7h9hJhKh", HC_FLUSH },          { "Ac2d3h4s5c", HC_STRAIGHT }, { "9s9h9d4c2s", HC_TRIPS },
-        { "9s9h4d4c2s", HC_TWO_PAIR },       { "JsJd2c5h9s", HC_PAIR },  { "7s5d4c3h2s", HC_HIGH_CARD },
+    static const struct { const char *h; int total, soft; } tot[] = {
+        { "As Kd", 21, 1 }, { "As Ad", 12, 1 }, { "As 6d 9c", 16, 0 }, { "Ks Qd 2c", 22, 0 }, { "As Ad Ac Ah 7s", 21, 1 },
     };
     int bad = 0;
-    Card c[7];
-    for (size_t i = 0; i < sizeof cases / sizeof cases[0]; i++)
-        if (hand(cases[i].h, c, 5) != 0 || eval_category(eval5(c)) != cases[i].cat) bad++;
-    hand("AsKsQsJsTs", c, 5);
-    int royal = eval5(c);
-    hand("7s5d4c3h2s", c, 5);
-    int worst = eval5(c);
-    hand("2c3dAsKsQsJsTs", c, 7);
-    int best7 = eval7(c);
-    int ok = bad == 0 && royal == 1 && worst == 7462 && best7 == 1;
-    selftest_add(r, "hand evaluator", ok, now_ms() - t0, "%d/9 categories, royal=%d, worst=%d, best-of-7=%d",
-                 9 - bad, royal, worst, best7);
+    for (size_t i = 0; i < sizeof tot / sizeof tot[0]; i++) {
+        Card c[8];
+        int n = cards_parse(tot[i].h, c, 8);
+        BjTotal t = bj_total(c, n);
+        if (t.total != tot[i].total || t.soft != tot[i].soft) bad++;
+    }
+    int sides = bj_pp_outcome(C("8s"), C("8s")) == PP_PERFECT && bj_pp_outcome(C("8h"), C("8d")) == PP_COLOURED &&
+                bj_pp_outcome(C("8h"), C("8c")) == PP_MIXED && bj_213_outcome(C("5h"), C("6h"), C("7h")) == T213_STRAIGHT_FLUSH &&
+                bj_213_outcome(C("Qh"), C("Kc"), C("Ah")) == T213_STRAIGHT && bj_213_outcome(C("7h"), C("7h"), C("7h")) == T213_SUITED_TRIPS &&
+                bj_hp_outcome(C("7h"), C("7h"), C("7h")) == HP_JACKPOT && bj_hp_outcome(C("7h"), C("7d"), C("7h")) == HP_THREE_COLOUR &&
+                bj_hp_outcome(C("2h"), C("7c"), C("7s")) == HP_NONE;
+    selftest_add(r, "hand totals, side bets", bad == 0 && sides, now_ms() - t0, "%d/5 totals, side bet outcomes %s",
+                 5 - bad, sides ? "ok" : "BAD");
 }
 
-static void check_classify(SelfTestReport *r)
-{
-    double t0 = now_ms();
-    draw_rules_init();
-    static const struct { int v; const char *h; int cat; } cases[] = {
-        { DRAW_JOB, "JsJd2c5h9s", DC_JACKS_OR_BETTER }, { DRAW_JOB, "TsTd2c5h9s", DC_NONE },
-        { DRAW_JOB, "AsKsQsJsTs", DC_ROYAL_FLUSH },     { DRAW_BONUS, "AsAhAdAc9s", DC_FOUR_ACES },
-        { DRAW_BONUS, "3s3h3d3c9s", DC_FOUR_2_4 },      { DRAW_BONUS, "8s8h8d8c9s", DC_FOUR_5_K },
-        { DRAW_DEUCES, "2c2d2h2s9s", DC_FOUR_DEUCES },  { DRAW_DEUCES, "2cKsQsJsTs", DC_WILD_ROYAL },
-        { DRAW_DEUCES, "2c9s9h9d9c", DC_FIVE_KIND },    { DRAW_DEUCES, "9s9h4d4c2s", DC_FULL_HOUSE },
-    };
-    int bad = 0, n = (int)(sizeof cases / sizeof cases[0]);
-    Card c[5];
-    for (int i = 0; i < n; i++)
-        if (hand(cases[i].h, c, 5) != 0 || draw_classify(cases[i].v, c) != cases[i].cat) bad++;
-    int pay_ok = draw_pay(DRAW_JOB, DC_ROYAL_FLUSH, 5) == 4000 && draw_pay(DRAW_JOB, DC_ROYAL_FLUSH, 4) == 1000 &&
-                 draw_pay(DRAW_JOB, DC_FULL_HOUSE, 1) == 9 && draw_pay(DRAW_JOB, DC_FLUSH, 1) == 6;
-    selftest_add(r, "pay categories", bad == 0 && pay_ok, now_ms() - t0, "%d/%d hands, 9/6 paytable %s", n - bad, n,
-                 pay_ok ? "ok" : "WRONG");
-}
-
+/* The exact return of the two fixed side bets over a six-deck shoe. */
 static void check_returns(SelfTestReport *r)
 {
-    static const double expect[DRAW_VARIANTS] = { 0.995439043695, 0.991659731872, 1.007619612039 };
-    int bad = 0;
-    char buf[100] = "";
-    size_t n = 0;
-    for (int v = 0; v < DRAW_VARIANTS; v++) {
-        const DrawPaytable *pt = draw_paytable(v);
-        double got = pt ? pt->optimal_return : 0.0;
-        if (fabs(got - expect[v]) > 5e-6) bad++;
-        int w = snprintf(buf + n, sizeof buf - n, "%s%s %.4f%%", v ? ", " : "", pt ? pt->short_name : "?", got * 100.0);
-        if (w > 0 && (size_t)w < sizeof buf - n) n += (size_t)w;
-    }
-    selftest_add(r, "paytable returns", bad == 0, 0.0, "%s", buf);
-}
-
-/* The exact-EV hint: a dealt royal must be held for exactly 4000, and the
- * fast method must agree with dealing out every replacement set. */
-static void check_ev(SelfTestReport *r)
-{
-    static DrawHint a, b;       /* large; keep them off the worker's stack */
-    Card c[5];
     double t0 = now_ms();
-    hand("AsKsQsJsTs", c, 5);
-    int ok = draw_hint_compute(DRAW_JOB, 5, c, &a) == 0 && a.best == 31 && a.best_ev == 4000.0;
-    double t1 = now_ms();
-    selftest_add(r, "hint: dealt royal", ok, t1 - t0, "best hold %02x, EV %.1f (want 1f, 4000)", a.best, a.best_ev);
-
-    static const struct { int v; const char *h; } hands[] = {
-        { DRAW_JOB, "AsKsQsJs9d" }, { DRAW_DEUCES, "2c7h8h9dKs" },
-    };
-    int agree = 1;
-    double fast = 0, brute = 0;
-    for (size_t i = 0; i < sizeof hands / sizeof hands[0]; i++) {
-        hand(hands[i].h, c, 5);
-        double s0 = now_ms();
-        int ra = draw_hint_compute(hands[i].v, 5, c, &a);
-        double s1 = now_ms();
-        int rb = draw_hint_compute_bruteforce(hands[i].v, 5, c, &b);
-        double s2 = now_ms();
-        fast += s1 - s0;
-        brute += s2 - s1;
-        if (ra != 0 || rb != 0 || a.best != b.best) agree = 0;
-        for (int m = 0; m < 32 && agree; m++)
-            if (a.num[m] != b.num[m] || a.den[m] != b.den[m]) agree = 0;
-    }
-    selftest_add(r, "hint: exact EV", agree, fast + brute, "fast = brute force on 2 hands x 32 holds (%.1f / %.0f ms)",
-                 fast, brute);
+    const double D = BJ_DECKS, N = BJ_SHOE_CARDS;
+    double pp = 0, t3 = 0;
+    for (int a = 0; a < 52; a++)
+        for (int b = 0; b < 52; b++) {
+            double wab = D * (b == a ? D - 1 : D) / (N * (N - 1));
+            int o = bj_pp_outcome((Card)a, (Card)b);
+            pp += wab * (o ? bj_pp_pays[o] + 1 : 0);
+            for (int u = 0; u < 52; u++) {
+                double w = wab * (D - (u == a) - (u == b)) / (N - 2);
+                int o3 = bj_213_outcome((Card)a, (Card)b, (Card)u);
+                t3 += w * (o3 ? bj_213_pays[o3] + 1 : 0);
+            }
+        }
+    int ok = fabs(pp - 0.938907) < 1e-5 && fabs(t3 - 0.953790) < 1e-5;
+    selftest_add(r, "side bet returns", ok, now_ms() - t0, "Perfect Pairs %.4f%%, 21+3 %.4f%% (want 93.8907, 95.3790)",
+                 pp * 100, t3 * 100);
 }
 
+/* The hint against the six-deck chart on the decisions people get wrong. */
+static void check_hint(SelfTestReport *r)
+{
+    double t0 = now_ms();
+    static const struct { const char *h, *up; int act; } cases[] = {
+        { "Ts 6d", "Kh", BJ_ACT_SURRENDER }, { "Ts 2d", "3h", BJ_ACT_HIT }, { "Ts 2d", "4h", BJ_ACT_STAND },
+        { "7s 4d", "Ah", BJ_ACT_HIT },       { "6s 4d", "9h", BJ_ACT_DOUBLE }, { "As 7d", "9h", BJ_ACT_HIT },
+        { "As 7d", "3h", BJ_ACT_DOUBLE },    { "8s 8d", "Ah", BJ_ACT_SPLIT },  { "9s 9d", "7h", BJ_ACT_STAND },
+        { "As 4d", "4h", BJ_ACT_DOUBLE },    { "As 2d", "5h", BJ_ACT_DOUBLE }, { "5s 5d", "Th", BJ_ACT_HIT },
+    };
+    int bad = 0, n = (int)(sizeof cases / sizeof cases[0]);
+    for (int i = 0; i < n; i++) {
+        Card h[2];
+        cards_parse(cases[i].h, h, 2);
+        BjAdvice a;
+        bj_advise(h, 2, C(cases[i].up), BJ_CAN_DOUBLE | BJ_CAN_SPLIT | BJ_CAN_SURRENDER, &a);
+        if (a.best != cases[i].act) bad++;
+    }
+    double ms = now_ms() - t0;
+    selftest_add(r, "strategy hint", bad == 0, ms, "%d/%d chart decisions, %.2f ms each", n - bad, n, ms / n);
+}
+
+/* A thousand rounds at a bare table: every credit staked comes back or is
+   lost exactly once, and every shoe holds six decks. */
+static void check_table(SelfTestReport *r)
+{
+    double t0 = now_ms();
+    BjConfig cfg;
+    bj_config_default(&cfg);
+    cfg.deal_gap = cfg.act_gap = cfg.dealer_gap = cfg.settle_ticks = 0;
+    cfg.peek_ticks = cfg.clear_ticks = cfg.shuffle_ticks = cfg.sides_ticks = cfg.big_ticks = cfg.jackpot_ticks = 1;
+    static BjGame g;
+    bj_init(&g, &cfg, 99, 0);
+    Wallet w = { 1000000, 1 };
+    int64_t staked = 0, back = 0;
+    int rounds = 0, shoe_ok = 1, shoes = 0;
+    g.side[BJ_SIDE_213] = 5;
+    while (rounds < 1000) {
+        InputFrame in;
+        memset(&in, 0, sizeof in);
+        if (g.phase == BJ_PH_BETTING) in.pressed = BTN_DEAL;
+        else if (bj_human_insurance(&g)) in.pressed = BTN_HOLD2;
+        else if (bj_human_turn(&g)) {
+            const BjHand *h = bj_cur_hand(&g, g.cfg.human_seat);
+            BjAdvice a;
+            bj_advise(h->c, h->n, bj_up_card(&g), bj_human_can(&g, &w), &a);
+            in.pressed = a.best == BJ_ACT_HIT ? BTN_HOLD1 : a.best == BJ_ACT_DOUBLE ? BTN_HOLD3 :
+                         a.best == BJ_ACT_SPLIT ? BTN_HOLD4 : a.best == BJ_ACT_SURRENDER ? BTN_HOLD5 : BTN_HOLD2;
+        }
+        EventQueue q = { .n = 0 };
+        bj_tick(&g, &in, &w, &q);
+        for (int i = 0; i < q.n; i++) {
+            const GameEvent *e = &q.e[i];
+            if (e->a != g.cfg.human_seat && e->type != EV_BJ_ROUND) continue;
+            if (e->type == EV_BJ_STAKE) staked += e->v;
+            else if (e->type == EV_BJ_RESULT || e->type == EV_BJ_SIDE || e->type == EV_BJ_INS_RESULT) back += e->v;
+            else if (e->type == EV_BJ_ROUND) rounds++;
+        }
+        if (g.shoes != shoes) {
+            shoes = g.shoes;
+            int cnt[52] = { 0 };
+            for (int i = 0; i < BJ_SHOE_CARDS; i++) if (g.shoe[i] < 52) cnt[g.shoe[i]]++;
+            for (int i = 0; i < 52; i++) if (cnt[i] != BJ_DECKS) shoe_ok = 0;
+        }
+    }
+    int64_t net = w.credits - 1000000;
+    int ok = net == back - staked && shoe_ok;
+    selftest_add(r, "table: 1000 rounds", ok, now_ms() - t0, "credits %s (net %+lld), %d shoes %s", net == back - staked ? "conserved" : "LEAK",
+                 (long long)net, shoes, shoe_ok ? "all six-deck" : "BAD");
+}
 static void check_shuffle(SelfTestReport *r)
 {
     double t0 = now_ms();
@@ -177,42 +191,11 @@ static void check_shuffle(SelfTestReport *r)
                  same ? "ok" : "BAD", perm ? "ok" : "BAD", chi, s1 != s2 ? "ok" : "REPEATS");
 }
 
-static void check_pots(SelfTestReport *r)
-{
-    double t0 = now_ms();
-    int64_t committed[HOLDEM_SEATS] = { 100, 200, 300, 300, 50, 0 };
-    uint8_t live[HOLDEM_SEATS] = { 1, 1, 1, 1, 0, 0 };
-    HoldemPot pots[HOLDEM_MAX_POTS];
-    int n = holdem_build_pots(committed, live, pots);
-    int64_t total = 0;
-    for (int i = 0; i < n; i++) total += pots[i].amount;
-    int64_t share[HOLDEM_SEATS] = { 0 };
-    holdem_split_pot(5, 0x05, 3, share);     /* seats 0 and 2 split 5, button 3 */
-    int ok = n == 3 && total == 950 && pots[0].amount == 450 && share[0] + share[2] == 5 &&
-             (share[0] == 3 || share[2] == 3);
-    selftest_add(r, "hold'em side pots", ok, now_ms() - t0, "%d pots, %lld chips (want 3, 950), odd chip split %lld/%lld",
-                 n, (long long)total, (long long)share[0], (long long)share[2]);
-}
-
-static void check_ai(SelfTestReport *r)
-{
-    double t0 = now_ms();
-    Card aa[2];
-    hand("AsAh", aa, 2);
-    Rng g;
-    rng_seed(&g, 7);
-    double eq = ai_equity(aa, NULL, 0, 1, NULL, 20000, &g);
-    int ok = eq > 0.83 && eq < 0.88;
-    selftest_add(r, "AI equity", ok, now_ms() - t0, "AA vs one random hand %.3f (exact 0.852)", eq);
-}
-
 void selftest_run_logic(SelfTestReport *r)
 {
-    check_eval(r);
-    check_classify(r);
+    check_rules(r);
     check_returns(r);
-    check_ev(r);
+    check_hint(r);
     check_shuffle(r);
-    check_pots(r);
-    check_ai(r);
+    check_table(r);
 }

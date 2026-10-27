@@ -27,6 +27,8 @@ void bj_config_default(BjConfig *c)
     c->clear_ticks = 30;
     c->shuffle_ticks = 150;
     c->sides_ticks = 50;
+    c->big_ticks = 200;
+    c->jackpot_ticks = 450;
     c->dealer_gap = 36;
     c->settle_ticks = 30;
     c->demo_bet_ticks = 100;
@@ -404,9 +406,13 @@ static int seats_in_round(const BjGame *g, int *list)
     return n;
 }
 
-static void settle_sides(BjGame *g, Wallet *w, EventQueue *out)
+/* Pays the side bets on the first two cards and the up card. Returns how big
+   the biggest moment was: 0 none, 1 a win, 2 a win of 25 to 1 or more, 3 a
+   HONEY POT - the table holds for it (BjConfig.big_ticks, jackpot_ticks). */
+static int settle_sides(BjGame *g, Wallet *w, EventQueue *out)
 {
     Card up = g->dealer[0];
+    int moment = 0;
     for (int s = 0; s < BJ_SEATS; s++) {
         BjSeat *st = &g->seat[s];
         if (!st->in_round) continue;
@@ -415,25 +421,29 @@ static void settle_sides(BjGame *g, Wallet *w, EventQueue *out)
             if (!st->side[k]) continue;
             int o = 0;
             int64_t paid = 0;
-            if (k == BJ_SIDE_PP) { o = bj_pp_outcome(a, b); if (o) paid = st->side[k] * (bj_pp_pays[o] + 1); }
-            if (k == BJ_SIDE_213) { o = bj_213_outcome(a, b, up); if (o) paid = st->side[k] * (bj_213_pays[o] + 1); }
+            int odds = 0;
+            if (k == BJ_SIDE_PP) { o = bj_pp_outcome(a, b); odds = bj_pp_pays[o]; }
+            if (k == BJ_SIDE_213) { o = bj_213_outcome(a, b, up); odds = bj_213_pays[o]; }
             if (k == BJ_SIDE_HONEY) {
                 o = bj_hp_outcome(a, b, up);
+                odds = bj_hp_pays[o];
                 if (o == HP_JACKPOT) {
                     paid = g->pot + st->side[k];
                     ev_push(out, EV_BJ_JACKPOT, s, 0, clamp32(g->pot));
                     g->pot = BJ_HONEY_SEED;
                     ev_push(out, EV_BJ_POT, 0, 0, clamp32(g->pot));
-                } else if (o) {
-                    paid = st->side[k] * (bj_hp_pays[o] + 1);
+                    moment = 3;
                 }
             }
+            if (o && !paid) paid = st->side[k] * (odds + 1);
+            if (o && moment < 2) moment = odds >= 25 ? 2 : 1;
             st->side_out[k] = (int8_t)o;
             st->side_paid[k] = paid;
             seat_credit(g, s, paid, w, out);
             ev_push(out, EV_BJ_SIDE, s, k | (o << 4), clamp32(paid));
         }
     }
+    return moment;
 }
 
 static void settle(BjGame *g, Wallet *w, EventQueue *out)
@@ -693,14 +703,17 @@ void bj_tick(BjGame *g, const InputFrame *in, Wallet *w, EventQueue *out)
     }
 
     case BJ_PH_SIDES: {
-        int any = 0;
         if (g->timer == 1) {
+            int any = 0;
             for (int s = 0; s < BJ_SEATS; s++)
                 for (int k = 0; k < BJ_SIDE_N; k++) any |= g->seat[s].in_round && g->seat[s].side[k] > 0;
-            settle_sides(g, w, out);
-            if (any) break;
+            int moment = settle_sides(g, w, out);
+            /* How long the table waits before play goes on: a moment for the
+               side bets to be paid, longer for a big win, and the whole
+               HONEY POT takeover. */
+            g->step = !any ? 0 : moment == 3 ? g->cfg.jackpot_ticks : moment == 2 ? g->cfg.big_ticks : g->cfg.sides_ticks;
         }
-        if (g->timer == 1 || g->timer >= g->cfg.sides_ticks) {
+        if (g->timer >= g->step) {
             int upv = bj_card_value(g->dealer[0]);
             if (upv == 11) set_phase(g, BJ_PH_INSURANCE, out);
             else if (upv == 10) set_phase(g, BJ_PH_PEEK, out);

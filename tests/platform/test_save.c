@@ -47,8 +47,8 @@ static SaveData state_with(int64_t credits)
     SaveData d;
     save_data_defaults(&d);
     d.credits = credits;
-    d.stats.draw_hands[0] = (uint64_t)credits * 3;
-    d.stats.royals = (uint64_t)credits % 7;
+    d.stats.hands = (uint64_t)credits * 3;
+    d.stats.blackjacks = (uint64_t)credits % 7;
     d.settings.vol_music = (uint8_t)(credits % 11);
     return d;
 }
@@ -60,7 +60,7 @@ static int64_t load_credits(const char *dir, SaveLoadInfo *info)
     SaveData d;
     if (save_store_load(&st, &d, info) != 0) return -1;
     /* Whatever loads must be a whole state, never a mix of two. */
-    CHECK_EQ_INT(d.stats.draw_hands[0], (uint64_t)d.credits * 3);
+    CHECK_EQ_INT(d.stats.hands, (uint64_t)d.credits * 3);
     CHECK_EQ_INT(d.settings.vol_music, d.credits % 11);
     return d.credits;
 }
@@ -88,15 +88,16 @@ static void test_format(void)
     SaveData d, e;
     save_data_defaults(&d);
     d.credits = 123456789012LL;
-    for (int i = 0; i < SAVE_VARIANTS; i++) {
-        d.stats.draw_hands[i] = 1000u + (uint64_t)i;
-        d.stats.draw_bet[i] = 5000u + (uint64_t)i;
-        d.stats.draw_paid[i] = 4900u + (uint64_t)i;
+    d.honey_pot = 12345;
+    for (int i = 0; i < SAVE_SIDES; i++) {
+        d.stats.side_bet[i] = 1000u + (uint64_t)i;
+        d.stats.side_paid[i] = 5000u + (uint64_t)i;
+        d.stats.side_hits[i] = 4900u + (uint64_t)i;
     }
-    d.stats.royals = 3;
-    d.stats.four_deuces = 2;
+    d.stats.blackjacks = 3;
+    d.stats.surrenders = 2;
     d.stats.biggest_win = 4000;
-    d.stats.holdem_places[5] = 77;
+    d.stats.losses = 77;
     d.stats.coins_in = UINT64_C(18446744073709551000);
     d.settings.vol_master = 3;
     d.settings.denom_cents = 5;
@@ -380,13 +381,6 @@ static void test_read_only(void)
 
 static void test_rules(void)
 {
-    for (int i = 0; i < settings_nbuyins; i++) {
-        int64_t b = settings_buyins[i], sum = 0;
-        for (int p = 1; p <= 6; p++) sum += sng_prize(b, p);
-        CHECK_EQ_INT(sum, 6 * b);       /* the pool is paid out exactly */
-        CHECK(sng_prize(b, 1) > sng_prize(b, 2) && sng_prize(b, 2) > sng_prize(b, 3));
-        CHECK_EQ_INT(sng_prize(b, 4), 0);
-    }
     Settings s;
     settings_defaults(&s);
     s.denom_cents = 25;

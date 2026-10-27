@@ -359,9 +359,9 @@ static void button_draw(const UiButton *b, Rectangle r, const char *label, Color
 /* ---- marquee ------------------------------------------------------------ */
 
 static const char k_script[] = "Beese's";
-static const char k_block[] = "POKER LOUNGE";
+static const char k_block[] = "BLACKJACK";
 #define M_SCRIPT 7
-#define M_LETTERS (7 + 12)
+#define M_LETTERS (7 + 9)
 
 /* Flicker patterns: power over ~0.5 s. */
 static float flicker_power(int pat, float t)
@@ -397,7 +397,6 @@ void marquee_update(Marquee *m, float dt)
                 for (int i = from; i < to; i++) { m->flick_t[i] = 0; m->flick_pat[i] = pat; }
             } else {
                 int i = fx_randi(0, M_LETTERS - 1);
-                if (i == M_SCRIPT + 5) i++;   /* the space in POKER LOUNGE */
                 m->flick_t[i] = 0;
                 m->flick_pat[i] = pat;
             }
@@ -476,7 +475,7 @@ void marquee_draw(const Marquee *m, float cx, float cy, float scale)
         gfx_spr_rot(sprite(SPR_BULB_OFF), x, y, 10 * scale, 10 * scale, 0, gfx_col((Color){ 255, 220, 150, 255 }));
     }
     float breathe = 0.92f + 0.08f * sinf(m->t * 1.3f);
-    float ss = 84 * scale, bs = 60 * scale;
+    float ss = 84 * scale, bs = 70 * scale;
     float w1 = text_width(FONT_SCRIPT, k_script, ss, 0), w2 = text_width(FONT_NEON_L, k_block, bs, 2 * scale);
     float gap = 26 * scale, x = cx - (w1 + gap + w2) / 2;
     mq_text(m, FONT_SCRIPT, k_script, 0, x, cy - ss * 0.58f, ss, UI_MAGENTA, breathe);

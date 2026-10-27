@@ -1,16 +1,14 @@
 /* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md */
-/* Cards, deck, events, wallet, fixed step and concurrent eval_init. */
+/* Cards, deck, events, wallet and fixed step. */
 
 #include "engine/card.h"
 #include "engine/deck.h"
-#include "engine/eval.h"
 #include "engine/event.h"
 #include "engine/input.h"
 #include "engine/step.h"
 #include "engine/wallet.h"
 #include "test_util.h"
 
-#include <pthread.h>
 #include <string.h>
 
 static void cards(void)
@@ -160,26 +158,10 @@ static void steps(void)
     CHECK(step_alpha(&s) >= 0.0f && step_alpha(&s) < 1.0f);
 }
 
-static void *init_thread(void *arg)
-{
-    Card h[7] = { 48, 44, 40, 36, 32, 0, 5 };   /* A K Q J T of clubs + junk */
-    eval_init();
-    *(int *)arg = eval7(h);
-    return NULL;
-}
 
-static void eval_threads(void)
-{
-    pthread_t t[8];
-    int r[8], i;
-    for (i = 0; i < 8; i++) pthread_create(&t[i], NULL, init_thread, &r[i]);
-    for (i = 0; i < 8; i++) pthread_join(t[i], NULL);
-    for (i = 0; i < 8; i++) CHECK_EQ_INT(r[i], 1);
-}
 
 int main(void)
 {
-    eval_threads();   /* first: eval_init races from 8 threads at once */
     cards();
     decks();
     events();

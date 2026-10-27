@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md */
 /* selftest.h - the service menu's self-test: checks that the game logic on
- * THIS machine computes what it must (evaluator, pay categories, paytable
- * returns, exact EV of the hint against brute force, shuffle and RNG,
- * Hold'em pot splitting, AI equity). Pure C, no raylib: it runs on a worker
+ * THIS machine computes what it must (hand totals and side-bet outcomes, the
+ * exact side-bet returns, the strategy hint against the six-deck chart,
+ * shuffle and RNG, a thousand rounds of the table balancing to the credit).
+ * Pure C, no raylib: it runs on a worker
  * thread and the tests could call it too. The service menu adds the checks
  * that need the platform (save directory write test, audio device, display). */
 #ifndef BPL_PLATFORM_SELFTEST_H

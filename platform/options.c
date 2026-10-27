@@ -18,7 +18,7 @@
 static const char *const g_usage =
     "usage: beese-poker [options]\n"
     "  --config FILE        settings file (default: config.ini next to the binary)\n"
-    "  --mode NAME          start state: attract menu draw holdem service gputest rendertest\n"
+    "  --mode NAME          start state: attract menu table service gputest rendertest\n"
     "  --seed HEX           session seed (default: OS entropy)\n"
     "  --frames N           exit after N rendered frames\n"
     "  --perf-csv FILE      per-frame log: frame,frame_ms,logic_ms,render_ms,draw_calls,...\n"

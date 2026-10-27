@@ -9,12 +9,12 @@
  * can all say "top row, far left" and be right on any wiring:
  *
  *        each side (Y X L over B A R on RetroPie's usual wiring)
- *   top:  HOLD 1   HOLD 2   HOLD 3
- *   bot:  HOLD 4   HOLD 5   DEAL / DRAW
+ *   top:  HIT (HOLD1)    STAND (HOLD2)      DOUBLE (HOLD3)
+ *   bot:  SPLIT (HOLD4)  SURRENDER (HOLD5)  DEAL
  *         SELECT = COIN     START = CASH OUT, held 3 s = SERVICE
- *   stick: up = BET ONE, right = BET MAX (Hold'em: up / down the amount,
- *          right ALL-IN) - mode_draw.c and mode_holdem.c turn the stick
- *          into these; panel_stick_for says which way, for the icons.
+ *   stick: up / down = bet more / less, right = BET MAX (the largest bet);
+ *          on the player's turn up is the strategy hint - mode_table.c and
+ *          the game read the stick; panel_stick_for says which way, for icons.
  *   SELECT + START together: leave the game (config.ini EXIT_COMBO).
  *
  * Which encoder input is in which position (the "wiring") comes from, last

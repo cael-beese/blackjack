@@ -131,6 +131,8 @@ typedef struct {
     int     deal_gap;        /* ticks between cards dealt                 */
     int     act_gap;         /* ticks after a play before the next input  */
     int     peek_ticks, clear_ticks, shuffle_ticks, sides_ticks;
+    int     big_ticks;       /* the hold after a side bet of 25 to 1 or more */
+    int     jackpot_ticks;   /* the hold after a HONEY POT (its takeover)     */
     int     dealer_gap;      /* ticks between the dealer's draws          */
     int     settle_ticks;    /* from the last dealer card to the payouts  */
     int     demo_bet_ticks;  /* demo: ticks in BETTING before it deals    */

@@ -8,16 +8,13 @@ function(bpl_add_test name src)
   add_test(NAME ${name} COMMAND ${name} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
-bpl_add_test(eval_exhaustive      test_eval_exhaustive.c    bpl_engine)
-bpl_add_test(eval7_vs_bruteforce  test_eval7_bruteforce.c   bpl_engine)
-bpl_add_test(eval7_exhaustive     test_eval7_exhaustive.c   bpl_engine)
 bpl_add_test(shuffle_uniformity   test_shuffle_uniformity.c bpl_engine)
 bpl_add_test(rng_replay_determinism test_rng_replay.c       bpl_engine)
 bpl_add_test(engine_basics        test_engine_basics.c      bpl_engine Threads::Threads)
 
 # Other modules add their tests in their own tests/<module>/CMakeLists.txt,
 # using bpl_add_test, without editing this file.
-foreach(sub blackjack draw holdem ai platform present)
+foreach(sub blackjack platform)
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${sub}/CMakeLists.txt)
     add_subdirectory(${sub})
   endif()

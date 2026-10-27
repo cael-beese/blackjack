@@ -11,9 +11,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "ai/ai.h"
 #include "audio.h"
 #include "engine/rng.h"
+#include "games/blackjack/bj_rules.h"
 #include "platform/fx_settings.h"
 #include "platform/save.h"
 
@@ -35,9 +35,8 @@ static struct {
     FILE       *hand_log;
     uint32_t    idle;
     int         coin_armed;
-    int         menu_game, hint_on;
+    int         hint_on;
     int         audio_started;
-    AiPool     *pool;
     Rng         seeds;
 
     /* the writer thread */
@@ -331,8 +330,6 @@ void session_shutdown(AppCtx *ctx)
             (long long)S.data.credits, S.info.ram_only ? " (RAM ONLY - not on disk)" : "");
     if (S.hand_log) fclose(S.hand_log);
     S.hand_log = NULL;
-    if (S.pool) ai_pool_destroy(S.pool);
-    S.pool = NULL;
     audio_shutdown();
     S.ctx = NULL;
 }
@@ -345,8 +342,6 @@ const SessionInfo *session_info(void) { return &S.info; }
 const EffectSettings *effects_get(void) { return &S.data.settings.effects; }
 FILE *session_hand_log(void) { return S.hand_log; }
 uint32_t session_idle_ticks(void) { return S.idle; }
-int session_menu_game(void) { return S.menu_game; }
-void session_set_menu_game(int g) { S.menu_game = (g >= 0 && g < MENU_NGAMES) ? g : 0; }
 int session_hint_on(void) { return S.hint_on; }
 void session_set_hint_on(int on) { S.hint_on = on ? 1 : 0; }
 uint64_t session_next_seed(void) { return rng_next(&S.seeds); }
@@ -388,8 +383,12 @@ void session_reset_stats(void)
     S.dirty = 1;
 }
 
-AiPool *session_ai_pool(void)
+
+int64_t session_honey_pot(void) { return S.data.honey_pot < BJ_HONEY_SEED ? BJ_HONEY_SEED : S.data.honey_pot; }
+
+void session_set_honey_pot(int64_t pot)
 {
-    if (!S.pool) S.pool = ai_pool_create(2);
-    return S.pool;
+    if (pot == S.data.honey_pot) return;
+    S.data.honey_pot = pot;
+    S.dirty = 1;
 }

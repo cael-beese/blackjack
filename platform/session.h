@@ -1,17 +1,15 @@
 /* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md */
 /* session.h - what lives for the whole run, across the app states: the
  * credits on disk, stats, operator settings, the coin mechanism, the idle
- * timer (for attract), the hand log, the AI worker pool, the audio device and
+ * timer (for attract), the hand log, the HONEY POT, the audio device and
  * the menu's choices.
  *
  * Persistence rule. The file always holds the credits the player would be
  * owed if the power went now:
  *     saved credits = wallet + pending
  * where `pending` is what the current game holds on the player's behalf
- * (session_set_pending): the bet of a Draw hand in progress before any win
- * (an interrupted hand is void and the bet goes back), a win on the meter not
- * yet collected, the Hold'em buy-in while the player is still in the
- * sit-and-go. The file is rewritten whenever that figure changes and after
+ * (session_set_pending): the bets of a blackjack round in progress (an
+ * interrupted round is void and every bet still riding goes back). The file is rewritten whenever that figure changes and after
  * every hand (stats), coin, service-menu change and on exit - always at the
  * end of a tick, i.e. at a consistent point, never halfway through a hand's
  * bookkeeping. Writing happens on a background thread (save.h does the
@@ -35,8 +33,8 @@ enum {
     APP_EV_CREDITS = 321,       /* the service menu changed credits: v = now      */
 };
 
-enum { MENU_GAME_JOB, MENU_GAME_BONUS, MENU_GAME_DEUCES, MENU_GAME_HOLDEM, MENU_NGAMES };
-enum { PENDING_DRAW, PENDING_HOLDEM, PENDING_SLOTS };
+
+enum { PENDING_TABLE, PENDING_SLOTS };
 
 #define SESSION_IDLE_ATTRACT_TICKS (60u * 60u)   /* SPEC: attract after 60 s idle */
 
@@ -87,12 +85,12 @@ FILE *session_hand_log(void);
 
 uint32_t session_idle_ticks(void);
 
-int  session_menu_game(void);
-void session_set_menu_game(int g);
 int  session_hint_on(void);
 void session_set_hint_on(int on);
 
-struct AiPool *session_ai_pool(void);      /* created on first use */
+/* The HONEY POT progressive, kept in the save file with the credits. */
+int64_t  session_honey_pot(void);
+void     session_set_honey_pot(int64_t pot);
 uint64_t session_next_seed(void);          /* the session's seed stream */
 
 const SessionInfo *session_info(void);

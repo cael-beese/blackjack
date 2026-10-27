@@ -10,11 +10,11 @@ add_library(bpl_render STATIC
   atlas.c
   cards.c
   celebrate.c
-  draw_view.c
+  views.c
   fx.c
   gfx.c
   holdem_art.c
-  holdem_present.c
+  table_present.c
   jobs.c
   lounge_view.c
   controls_view.c

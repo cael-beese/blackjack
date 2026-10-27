@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md */
 /* controls_view.c - the CONTROLS page of the menu: the cabinet panel as
- * a drawing, both sides, with what every button does in Draw Poker (honey)
- * and in Hold'em (green), lit while it is held. See draw_view.h.
+ * a drawing, both sides, with what every button does while playing a hand
+ * (honey) and while betting (green), lit while it is held. See views.h.
  *
  * The labels hang off the logical buttons, and panel.h says which logical
  * buttons each position drives, so the page follows the layout table there;
  * a position lights from its wired encoder input (panel_slot_down), and from
  * the keyboard through the logical buttons it drives. */
-#include "render/draw_view.h"
+#include "render/views.h"
 
 #include <math.h>
 #include <string.h>
@@ -16,22 +16,22 @@
 #include "render/render.h"
 
 #define C_DRAW    UI_HONEY
-#define C_HOLDEM  ((Color){ 120, 255, 140, 255 })
+#define C_BET     ((Color){ 120, 255, 140, 255 })
 
-/* What each logical button does: Draw Poker, Hold'em. */
+/* What each logical button does: playing a hand, betting. */
 static void names(uint32_t btn, const char **draw, const char **holdem)
 {
     *draw = *holdem = "";
     switch (btn) {
-    case BTN_HOLD1: *draw = "HOLD 1"; *holdem = "FOLD"; break;
-    case BTN_HOLD2: *draw = "HOLD 2"; *holdem = "CHECK / CALL"; break;
-    case BTN_HOLD3: *draw = "HOLD 3"; *holdem = "RAISE 1/2 POT"; break;
-    case BTN_HOLD4: *draw = "HOLD 4"; *holdem = "RAISE 3/4 POT"; break;
-    case BTN_HOLD5: *draw = "HOLD 5"; *holdem = "RAISE POT"; break;
-    case BTN_DEAL: *draw = "DEAL / DRAW"; *holdem = "BET / RAISE"; break;
-    case BTN_BET_ONE: *draw = "BET ONE"; *holdem = "+1 BIG BLIND"; break;
-    case BTN_BET_MAX: *draw = "BET MAX"; *holdem = "ALL-IN"; break;
-    case BTN_CASH_OUT: *draw = "CASH OUT"; *holdem = "LEAVE TABLE"; break;
+    case BTN_HOLD1: *draw = "HIT"; *holdem = "PERFECT PAIRS"; break;
+    case BTN_HOLD2: *draw = "STAND"; *holdem = "21+3"; break;
+    case BTN_HOLD3: *draw = "DOUBLE"; *holdem = "HONEY POT"; break;
+    case BTN_HOLD4: *draw = "SPLIT"; *holdem = "BET LESS"; break;
+    case BTN_HOLD5: *draw = "SURRENDER"; *holdem = "BET MORE"; break;
+    case BTN_DEAL: *draw = "DEAL"; *holdem = "DEAL"; break;
+    case BTN_BET_ONE: *draw = "HINT"; *holdem = "BET MORE"; break;
+    case BTN_BET_MAX: *draw = ""; *holdem = "BET MAX"; break;
+    case BTN_CASH_OUT: *draw = "CASH OUT"; *holdem = "TO THE LOBBY"; break;
     case BTN_COIN: *draw = "COIN"; *holdem = "(ADD CREDITS)"; break;
     case BTN_START: *draw = "START"; *holdem = ""; break;
     case BTN_SERVICE: *draw = "SERVICE"; *holdem = "(HOLD 3 S)"; break;
@@ -92,11 +92,11 @@ void controls_view_draw(const MenuViewInfo *v, double time)
         ts.align = ALIGN_CENTER;
         ts.spacing = 2;
         ts.color = C_DRAW;
-        text_draw_ex(FONT_UI_M, "DRAW POKER", 560, 92, 21, &ts);
+        text_draw_ex(FONT_UI_M, "PLAYING A HAND", 540, 92, 21, &ts);
         ts.color = (Color){ 150, 140, 150, 255 };
         text_draw_ex(FONT_UI_M, "/", 640, 92, 21, &ts);
-        ts.color = C_HOLDEM;
-        text_draw_ex(FONT_UI_M, "HOLD'EM", 712, 92, 21, &ts);
+        ts.color = C_BET;
+        text_draw_ex(FONT_UI_M, "BETTING", 712, 92, 21, &ts);
     }
 
     for (int side = 0; side < 2; side++) {
@@ -104,7 +104,7 @@ void controls_view_draw(const MenuViewInfo *v, double time)
         ui_panel((Rectangle){ ox, oy, pw, ph }, side ? UI_MAGENTA : UI_HONEY, 0.35f, 1);
         centred(FONT_UI_M, side ? "PLAYER 2 SIDE" : "PLAYER 1 SIDE", ox + pw / 2, oy + 10, 20, (Color){ 190, 180, 200, 255 }, 1);
 
-        /* The stick: menus, and the Hold'em bet amount. */
+        /* The stick: the bet, the hint, and menus. */
         float sx = ox + 82, sy = oy + 205;
         gfx_circle(sx, sy, 42, gfx_col((Color){ 26, 20, 30, 255 }));
         gfx_ring(sx, sy, 42, 4, gfx_col((Color){ 90, 80, 96, 255 }));
@@ -113,12 +113,12 @@ void controls_view_draw(const MenuViewInfo *v, double time)
         float ky = sy + (v->down & BTN_UP ? -14.0f : v->down & BTN_DOWN ? 14.0f : 0.0f);
         gfx_circle(kx, ky, 20, gfx_col(stick ? (Color){ 255, 80, 90, 255 } : (Color){ 200, 40, 50, 255 }));
         gfx_circle(kx - 6, ky - 7, 7, gfx_add(WHITE, 0.35f));
-        /* The stick's bets (panel.h, mode_draw.c, mode_holdem.c). */
+        /* The stick (panel.h, mode_table.c, bj_game.h). */
         centred(FONT_UI_S, "STICK", sx, sy + 52, 16, (Color){ 170, 160, 175, 255 }, 1);
-        centred(FONT_UI_S, "UP: BET ONE", sx, sy + 72, 15, C_DRAW, 1);
-        centred(FONT_UI_S, "RIGHT: BET MAX", sx, sy + 88, 15, C_DRAW, 1);
-        centred(FONT_UI_S, "UP/DOWN: AMOUNT", sx, sy + 108, 15, C_HOLDEM, 1);
-        centred(FONT_UI_S, "RIGHT: ALL-IN", sx, sy + 124, 15, C_HOLDEM, 1);
+        centred(FONT_UI_S, "UP: HINT ON / OFF", sx, sy + 72, 15, C_DRAW, 1);
+        centred(FONT_UI_S, "(ON YOUR TURN)", sx, sy + 88, 15, C_DRAW, 1);
+        centred(FONT_UI_S, "UP/DOWN: BET", sx, sy + 108, 15, C_BET, 1);
+        centred(FONT_UI_S, "RIGHT: BET MAX", sx, sy + 124, 15, C_BET, 1);
         centred(FONT_UI_S, "MENUS: CHOOSE", sx, sy + 144, 15, (Color){ 170, 160, 175, 255 }, 1);
 
         for (int k = 0; k < PS_PER_SIDE; k++) {
@@ -139,7 +139,7 @@ void controls_view_draw(const MenuViewInfo *v, double time)
                     continue;
                 }
                 centred(FONT_DISP_S, dn, cx, ty, dn[0] && strlen(dn) > 8 ? 15 : 17, lit ? WHITE : C_DRAW, 1);
-                centred(FONT_UI_S, hn, cx, ty + 22, 16, C_HOLDEM, 1);
+                centred(FONT_UI_S, hn, cx, ty + 22, 16, C_BET, 1);
             } else {
                 float cx = ox + 290 + (float)(k - 6) * 180, cy = oy + 382;
                 pill(cx, cy, 70, 26, lit, does != 0, neon);
@@ -158,7 +158,7 @@ void controls_view_draw(const MenuViewInfo *v, double time)
     ts.color = (Color){ 230, 220, 235, 255 };
     text_draw_ex(FONT_UI_M, "PRESS ANY BUTTON: IT LIGHTS UP HERE", 640, 592, 24, &ts);
     ts.color = (Color){ 170, 160, 175, 255 };
-    text_draw_ex(FONT_UI_M, "DRAW POKER: BET, DEAL, HOLD THE CARDS YOU KEEP, DRAW.   HOLD'EM: THE BUTTONS UNDER THE TABLE SAY WHAT THEY DO.",
+    text_draw_ex(FONT_UI_M, "SET YOUR BET AND SIDE BETS, PRESS DEAL, THEN PLAY YOUR HAND.   THE BUTTONS UNDER THE TABLE SAY WHAT THEY DO.",
                  640, 624, 17, &ts);
     text_draw_ex(FONT_UI_M, "LEAVE THE GAME: HOLD SELECT + START TOGETHER", 400, 648, 17, &ts);
     /* BUTTON MAP: DEAL held, with its progress. */
@@ -173,7 +173,7 @@ void controls_view_draw(const MenuViewInfo *v, double time)
     /* The way out, lit where it is. */
     float pulse = 0.65f + 0.35f * sinf((float)time * 4);
     const float gh = 24, gw = ui_panel_glyph_w(gh);
-    const char *out = "CASH OUT: BACK TO THE MENU";
+    const char *out = "CASH OUT: BACK TO THE LOBBY";
     float tw = text_width(FONT_NEON_M, out, 28, 0);
     float x0 = 640 - (gw + 14 + tw) * 0.5f;
     ui_panel_glyph(x0, 680 - gh * 0.5f, gh, BTN_CASH_OUT, UI_CYAN, 1);

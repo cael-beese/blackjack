@@ -13,7 +13,7 @@
  * CASH OUT held for two seconds, leaves it.
  *
  * Pages: the settings list (credits, denomination, coin value, volumes,
- * music, hint default, double-up, difficulty, buy-in), EFFECTS (every
+ * music, hint default, the bee regulars), EFFECTS (every
  * settings.effects toggle), STATISTICS, INPUT TEST, SOUND TEST (every SfxId,
  * one at a time or all in turn), LEARN PANEL (which encoder input is in
  * which panel position, see panel.h), BUTTON MAP (which function each
@@ -30,14 +30,13 @@
 
 #include "raylib.h"
 #include "rlgl.h"
-#include "ai/ai.h"
 #include "audio.h"
 #include "platform/app.h"
 #include "platform/input.h"
 #include "platform/joy_evdev.h"
 #include "platform/panel.h"
 #include "platform/perf.h"
-#include "platform/placeholder_view.h"
+#include "platform/table_view.h"
 #include "platform/save.h"
 #include "platform/screen.h"
 #include "platform/selftest.h"
@@ -56,11 +55,10 @@ enum { PG_MAIN, PG_EFFECTS, PG_STATS, PG_INPUT, PG_SOUND, PG_SELFTEST, PG_LEARN,
 
 enum {
     IT_CREDITS, IT_ADD, IT_RESET, IT_DENOM, IT_COIN, IT_VMASTER, IT_VMUSIC, IT_VSFX, IT_MUSIC, IT_HINT,
-    IT_DOUBLE, IT_DIFF, IT_BUYIN, IT_EFFECTS, IT_STATS, IT_LEARN, IT_MAP, IT_MAP_RESET, IT_INPUT, IT_SOUND, IT_SELFTEST, IT_RESET_STATS,
+    IT_REGULARS, IT_EFFECTS, IT_STATS, IT_LEARN, IT_MAP, IT_MAP_RESET, IT_INPUT, IT_SOUND, IT_SELFTEST, IT_RESET_STATS,
     IT_EXIT, IT_COUNT
 };
 
-static const char *const k_diff[AI_NDIFF] = { "EASY", "NORMAL", "HARD", "EXPERT" };
 static const int k_add_amounts[] = { 10, 100, 1000, 10000 };
 #define N_ADD ((int)(sizeof k_add_amounts / sizeof k_add_amounts[0]))
 
@@ -145,17 +143,6 @@ static int step_u16(uint16_t *v, const uint16_t *tab, int n, int d)
     return 1;
 }
 
-static int step_u32(uint32_t *v, const uint32_t *tab, int n, int d)
-{
-    int i = 0;
-    while (i < n && tab[i] != *v) i++;
-    if (i == n) i = 0;
-    i += d;
-    if (i < 0) i = 0;
-    if (i >= n) i = n - 1;
-    *v = tab[i];
-    return 1;
-}
 
 static void step_u8(uint8_t *v, int lo, int hi, int d)
 {
@@ -408,12 +395,12 @@ static void draw_learn(const AppCtx *ctx)
 #define MAP_IDLE 60.0f
 
 static const char *const k_fn_help[PF_MAP_COUNT] = {
-    "DRAW POKER: HOLD CARD 1      HOLD'EM: FOLD",
-    "DRAW POKER: HOLD CARD 2      HOLD'EM: CHECK / CALL",
-    "DRAW POKER: HOLD CARD 3      HOLD'EM: RAISE 1/2 POT",
-    "DRAW POKER: HOLD CARD 4      HOLD'EM: RAISE 3/4 POT",
-    "DRAW POKER: HOLD CARD 5      HOLD'EM: RAISE POT",
-    "DEAL / DRAW, BET / RAISE IN HOLD'EM, AND CHOOSE IN MENUS",
+    "HIT.  WHILE BETTING: PERFECT PAIRS BET.  INSURANCE: YES",
+    "STAND.  WHILE BETTING: 21+3 BET.  INSURANCE: NO",
+    "DOUBLE DOWN.  WHILE BETTING: HONEY POT ON / OFF",
+    "SPLIT.  WHILE BETTING: BET LESS",
+    "SURRENDER.  WHILE BETTING: BET MORE",
+    "DEAL, AND CHOOSE IN MENUS",
     "ADD CREDITS.  WITH CASH OUT: LEAVE THE GAME (HOLD BOTH)",
     "CASH OUT / LEAVE THE TABLE / BACK.  HELD 3 S: SERVICE MENU",
 };
@@ -580,9 +567,7 @@ static void main_action(AppCtx *ctx, int d)
     case IT_VSFX:    step_u8(&s->vol_sfx, 0, 10, d ? d : 1); changed = 1; break;
     case IT_MUSIC:   s->music_on = !s->music_on; changed = 1; break;
     case IT_HINT:    s->hint_default = !s->hint_default; session_set_hint_on(s->hint_default); changed = 1; break;
-    case IT_DOUBLE:  s->double_up = !s->double_up; changed = 1; break;
-    case IT_DIFF:    step_u8(&s->difficulty, 0, AI_NDIFF - 1, d ? d : 1); changed = 1; break;
-    case IT_BUYIN:   changed = step_u32(&s->holdem_buyin, settings_buyins, settings_nbuyins, d ? d : 1); break;
+    case IT_REGULARS: s->regulars = !s->regulars; changed = 1; break;
     case IT_EFFECTS: if (!d) V.page = PG_EFFECTS; break;
     case IT_STATS:   if (!d) V.page = PG_STATS; break;
     case IT_LEARN:   if (!d) learn_start(0); break;
@@ -720,7 +705,7 @@ static void service_tick(AppCtx *ctx, const InputFrame *in)
 
 static void service_present_update(const AppCtx *ctx, const GameEvent *ev, int nev, float dt)
 {
-    placeholder_common_update(ctx->state, ev, nev, dt);
+    app_common_update(ctx->state, ev, nev, dt);
     if (V.page == PG_LEARN) learn_update(dt);
     if (V.page == PG_MAP) map_update(dt);
     if (V.play_req >= 0) {
@@ -818,9 +803,7 @@ static void draw_main(const AppCtx *ctx)
         case IT_VSFX: name = "SOUND FX VOLUME"; snprintf(v, sizeof v, "%d", s->vol_sfx); break;
         case IT_MUSIC: name = "MUSIC"; snprintf(v, sizeof v, "%s", s->music_on ? "ON" : "OFF"); break;
         case IT_HINT: name = "STRATEGY HINT AT START"; snprintf(v, sizeof v, "%s", s->hint_default ? "ON" : "OFF"); break;
-        case IT_DOUBLE: name = "DOUBLE UP"; snprintf(v, sizeof v, "%s", s->double_up ? "ON" : "OFF"); break;
-        case IT_DIFF: name = "HOLD'EM OPPONENTS"; snprintf(v, sizeof v, "%s", k_diff[s->difficulty < AI_NDIFF ? s->difficulty : 1]); break;
-        case IT_BUYIN: name = "HOLD'EM BUY-IN"; snprintf(v, sizeof v, "%u credits", (unsigned)s->holdem_buyin); break;
+        case IT_REGULARS: name = "BEE REGULARS AT THE TABLE"; snprintf(v, sizeof v, "%s", s->regulars ? "ON" : "OFF (HEADS UP)"); break;
         case IT_EFFECTS: name = "EFFECTS  >"; break;
         case IT_STATS: name = "STATISTICS  >"; break;
         case IT_LEARN: name = "LEARN PANEL  >"; snprintf(v, sizeof v, "%s", panel_learned() ? "learned" : "not learned yet"); break;
@@ -864,28 +847,26 @@ static void draw_effects(void)
 static void draw_stats(void)
 {
     const Stats *st = session_stats();
-    static const char *const vn[SAVE_VARIANTS] = { "JACKS OR BETTER", "BONUS POKER", "DEUCES WILD" };
+    static const char *const sn[SAVE_SIDES] = { "PERFECT PAIRS", "21+3", "HONEY POT" };
+    typedef unsigned long long ull;
     int y = 70, x = 40;
-    line(x, &y, C_HONEY, "DRAW POKER                hands        bet       paid    return");
-    for (int v = 0; v < SAVE_VARIANTS; v++) {
-        double ret = st->draw_bet[v] ? 100.0 * (double)st->draw_paid[v] / (double)st->draw_bet[v] : 0.0;
-        line(x, &y, RAYWHITE, "  %-18s %10llu %10llu %10llu   %6.2f%%", vn[v], (unsigned long long)st->draw_hands[v],
-             (unsigned long long)st->draw_bet[v], (unsigned long long)st->draw_paid[v], ret);
-    }
-    line(x, &y, RAYWHITE, "  royal flushes %llu    four deuces %llu    biggest win %lld",
-         (unsigned long long)st->royals, (unsigned long long)st->four_deuces, (long long)st->biggest_win);
-    line(x, &y, RAYWHITE, "  double-up rounds %llu, won %llu", (unsigned long long)st->dbl_played,
-         (unsigned long long)st->dbl_won);
+    double ret = st->wagered ? 100.0 * (double)st->paid / (double)st->wagered : 0.0;
+    line(x, &y, C_HONEY, "BLACKJACK              rounds      hands    wagered       paid    return");
+    line(x, &y, RAYWHITE, "  the player       %10llu %10llu %10llu %10llu   %6.2f%%", (ull)st->rounds, (ull)st->hands,
+         (ull)st->wagered, (ull)st->paid, ret);
+    line(x, &y, RAYWHITE, "  hands won %llu   pushed %llu   lost %llu   blackjacks %llu", (ull)st->wins, (ull)st->pushes,
+         (ull)st->losses, (ull)st->blackjacks);
+    line(x, &y, RAYWHITE, "  doubles %llu   splits %llu   surrenders %llu   insured %llu", (ull)st->doubles,
+         (ull)st->splits, (ull)st->surrenders, (ull)st->insured);
+    line(x, &y, RAYWHITE, "  biggest round %lld credits", (long long)st->biggest_win);
     y += 16;
-    line(x, &y, C_HONEY, "TEXAS HOLD'EM");
-    line(x, &y, RAYWHITE, "  sit-and-gos %llu   won %llu   hands %llu", (unsigned long long)st->holdem_games,
-         (unsigned long long)st->holdem_wins, (unsigned long long)st->holdem_hands);
-    line(x, &y, RAYWHITE, "  places 1st %llu  2nd %llu  3rd %llu  4th %llu  5th %llu  6th %llu",
-         (unsigned long long)st->holdem_places[0], (unsigned long long)st->holdem_places[1],
-         (unsigned long long)st->holdem_places[2], (unsigned long long)st->holdem_places[3],
-         (unsigned long long)st->holdem_places[4], (unsigned long long)st->holdem_places[5]);
-    line(x, &y, RAYWHITE, "  buy-ins %llu credits, prizes %llu credits", (unsigned long long)st->holdem_buyins,
-         (unsigned long long)st->holdem_prizes);
+    line(x, &y, C_HONEY, "SIDE BETS                 bet       paid       hits    return");
+    for (int k = 0; k < SAVE_SIDES; k++) {
+        double r = st->side_bet[k] ? 100.0 * (double)st->side_paid[k] / (double)st->side_bet[k] : 0.0;
+        line(x, &y, RAYWHITE, "  %-16s %10llu %10llu %10llu   %6.2f%%", sn[k], (ull)st->side_bet[k], (ull)st->side_paid[k],
+             (ull)st->side_hits[k], r);
+    }
+    line(x, &y, RAYWHITE, "  HONEY POTs won %llu   the pot now %lld", (ull)st->jackpots, (long long)session_honey_pot());
     y += 16;
     line(x, &y, C_HONEY, "CREDITS");
     line(x, &y, RAYWHITE, "  coins in %llu   added in service %llu   resets %llu", (unsigned long long)st->coins_in,

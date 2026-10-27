@@ -8,7 +8,7 @@
 #include <strings.h>
 
 static const char *const g_state_names[APP_NSTATES] = {
-    "ATTRACT", "MENU", "DRAW", "HOLDEM", "SERVICE", "GPUTEST", "RENDERTEST"
+    "ATTRACT", "MENU", "TABLE", "SERVICE", "GPUTEST", "RENDERTEST"
 };
 
 /* Events of every tick since the last rendered frame, for present_update.

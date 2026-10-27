@@ -12,7 +12,7 @@ static void fast_config(BjConfig *c)
 {
     bj_config_default(c);
     c->deal_gap = c->act_gap = c->dealer_gap = c->settle_ticks = 0;
-    c->peek_ticks = c->clear_ticks = c->shuffle_ticks = c->sides_ticks = 1;
+    c->peek_ticks = c->clear_ticks = c->shuffle_ticks = c->sides_ticks = c->big_ticks = c->jackpot_ticks = 1;
     c->demo_bet_ticks = 1;
 }
 

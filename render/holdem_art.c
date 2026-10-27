@@ -483,14 +483,23 @@ static void paint_avatar(int who)
 
 /* ---- the table backdrop -------------------------------------------------------- */
 
-static float stadium(float x, float y, float inset)
+/* Signed distance (px, negative inside) to the ellipse of the table's curved
+   edge: a first-order distance, exact on the edge and close to it, which is
+   all the rail and the neon need. */
+static float ellipse_d(float x, float y)
 {
-    /* Signed distance to the table's stadium outline (straight sides, round
-       ends), moved inwards by inset. */
-    float r = HT_HY - inset;
-    float qx = fabsf(x - HT_CX) - (HT_HX - HT_HY), qy = fabsf(y - HT_CY);
-    if (qx <= 0) return qy - r;
-    return sqrtf(qx * qx + qy * qy) - r;
+    float dx = x - BT_CX, dy = y - BT_CY;
+    float k = sqrtf(dx * dx / (BT_A * BT_A) + dy * dy / (BT_B * BT_B));
+    float g = sqrtf(dx * dx / (BT_A * BT_A * BT_A * BT_A) + dy * dy / (BT_B * BT_B * BT_B * BT_B));
+    if (k < 1e-4f || g < 1e-9f) return -BT_B;
+    return (k - 1.0f) * k / g;
+}
+
+/* The whole table: the ellipse cut by the dealer's straight edge. */
+static float table_d(float x, float y)
+{
+    float de = ellipse_d(x, y), dt = BT_CY - y;
+    return de > dt ? de : dt;
 }
 
 static float sat01(float v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
@@ -517,14 +526,14 @@ static RCol room_color(float fx, float fy, int x, int y)
     return rc(c.r + g, c.g + g, c.b + g, 1);
 }
 
-static RCol felt_color(float fx, float fy, float d, int x, int y)
+static RCol felt_color(float fx, float fy, float de, int x, int y)
 {
-    /* Charcoal felt, warmer and lighter where the lamp over the table falls. */
-    float lx = (fx - HT_CX) / 520, ly = (fy - (HT_CY - 10)) / 250;
+    /* Charcoal felt, warmer and lighter where the lamp over the table falls
+       (over the players' cards, a little below the dealer). */
+    float lx = (fx - BT_CX) / 560, ly = (fy - 300) / 330;
     float l = 1 - (lx * lx + ly * ly);
     l = l < 0 ? 0 : l;
     RCol c = rc_mix(rc_hex(0x0F0D12, 1), rc_hex(0x2A1C26, 1), 0.85f * l * (1.4f - 0.4f * l));
-    /* Felt grain. */
     float g = (rnoise_hash(x, y, 13) - 0.5f) * 0.03f;
     c = rc(c.r + g, c.g + g, c.b + g, 1);
     /* A faint honeycomb woven into the cloth. */
@@ -533,17 +542,15 @@ static RCol felt_color(float fx, float fy, float d, int x, int y)
     float cov = 1 - e / 1.1f;
     if (cov > 0) c = rc_mix(c, rc_hex(ART_HONEY, 1), (0.035f + 0.05f * l) * cov);
     else if (e < 3.5f) c = rc_scale(c, 0.97f);
-    /* The rail's shadow on the cloth. */
-    float sh = d > -HT_RAIL - 60 ? expf((d + HT_RAIL) / 11.0f) : 0;
-    c = rc_scale(c, 1 - 0.55f * sat01(sh));
+    /* The shadows of the rail and of the dealer's edge on the cloth. */
+    float sh = de > -BT_RAIL - 60 ? expf((de + BT_RAIL) / 11.0f) : 0;
+    float st = expf(-(fy - BT_CY - 8) / 14.0f);
+    c = rc_scale(c, 1 - 0.55f * sat01(sh) - 0.45f * sat01(st));
     /* The neon inlay (baked dim; the presentation lights it). */
-    float dn = fabsf(d + HT_NEON);
+    float dn = fabsf(de + BT_NEON);
     RCol mag = rc_hex(ART_MAGENTA, 1);
     c = rc_mix(c, rc_mix(mag, rc(1, 1, 1, 1), 0.25f), 0.42f * sat01(1.3f - dn));
     if (dn < 30) c = rc_mix(c, mag, 0.16f * expf(-dn / 4.5f));
-    /* The betting line. */
-    float db = fabsf(d + HT_BETLINE);
-    c = rc_mix(c, rc_hex(ART_HONEY, 1), 0.20f * sat01(1.1f - db));
     return c;
 }
 
@@ -552,11 +559,11 @@ static RCol rail_color(float fx, float fy, float d)
     static const BrassParams outer = { 0.2f, 57, 0.6f }, inner = { 0.2f, 61, 0.4f };
     float e = -d;   /* depth into the rail, 0 at the outer edge */
     if (e < 6.0f) return art_brass(fx, fy, d, &outer);
-    if (e >= HT_RAIL - 4.0f) return art_brass(fx, fy, e - HT_RAIL, &inner);
+    if (e >= BT_RAIL - 4.0f) return art_brass(fx, fy, e - BT_RAIL, &inner);
     /* The padded leather cushion: rounded profile, lit from above. */
-    float u = (e - 6.0f) / (HT_RAIL - 10.0f);
+    float u = (e - 6.0f) / (BT_RAIL - 10.0f);
     float cushion = sinf(u * PI_F);
-    float top = fy < HT_CY ? 1.0f : 0.55f;
+    float top = fy < 300 ? 1.0f : 0.55f;
     RCol c = rc_mix(rc_hex(0x0C080B, 1), rc_hex(0x3A2830, 1), 0.65f * sqrtf(cushion) * (0.6f + 0.4f * top));
     float spec = expf(-((u - 0.32f) * (u - 0.32f)) / 0.012f);
     c = rc_mix(c, rc_hex(0xFFE6D0, 1), 0.10f * spec * top);
@@ -566,26 +573,31 @@ static RCol rail_color(float fx, float fy, float d)
 
 static void table_strip(int s)
 {
+    static const BrassParams edge = { 0.2f, 59, 0.5f };
     int y0 = PLAY_H * s / TABLE_STRIPS, y1 = PLAY_H * (s + 1) / TABLE_STRIPS;
     for (int y = y0; y < y1; y++) {
         uint8_t *row = g_table_px + (size_t)y * PLAY_W * 4;
         for (int x = 0; x < PLAY_W; x++) {
             float fx = x + 0.5f, fy = y + 0.5f;
-            float d = stadium(fx, fy, 0);
+            float d = table_d(fx, fy), de = ellipse_d(fx, fy);
             RCol c;
             if (d > 1.0f) {
                 c = room_color(fx, fy, x, y);
                 /* The table's shadow on the floor. */
-                float ds = stadium(fx, fy - 16, 0);
+                float ds = table_d(fx, fy - 16);
                 float sh = ds < 160 ? expf(-(ds > 0 ? ds : 0) / 26.0f) : 0;
-                c = rc_scale(c, 1 - 0.8f * sh);
-            } else if (d > -HT_RAIL) {
-                c = rail_color(fx, fy, d);
+                if (fy > BT_CY) c = rc_scale(c, 1 - 0.8f * sh);
+            } else if (fy - BT_CY < 8.0f) {
+                /* The dealer's edge: a straight brass strip. */
+                c = art_brass(fx, fy, -(fy - BT_CY) - 0.5f, &edge);
                 if (d > 0) c = rc_mix(c, rc_scale(room_color(fx, fy, x, y), 0.2f), d);
-                float din = d + HT_RAIL;        /* soft edge to the felt */
-                if (din < 1.0f) c = rc_mix(felt_color(fx, fy, d, x, y), c, sat01(din));
+            } else if (de > -BT_RAIL) {
+                c = rail_color(fx, fy, de);
+                if (d > 0) c = rc_mix(c, rc_scale(room_color(fx, fy, x, y), 0.2f), d);
+                float din = de + BT_RAIL;       /* soft edge to the felt */
+                if (din < 1.0f) c = rc_mix(felt_color(fx, fy, de, x, y), c, sat01(din));
             } else {
-                c = felt_color(fx, fy, d, x, y);
+                c = felt_color(fx, fy, de, x, y);
             }
             uint8_t *p = row + x * 4;
             p[0] = (uint8_t)(sat01(c.r) * 255);
@@ -594,21 +606,22 @@ static void table_strip(int s)
             p[3] = 255;
         }
     }
-    /* Details, clipped to this strip: the house emblem under the board. */
+    /* Details, clipped to this strip: the house emblem in the middle of the
+       felt, under the "BLACKJACK PAYS" line. */
     Canvas cv = { g_table_px + (size_t)y0 * PLAY_W * 4, PLAY_W, y1 - y0, PLAY_W };
     float oy = -(float)y0;
     Xf xf = xf_make(0, oy, 1, 0);
-    Shape em[1] = { hexs(HT_CX, HT_CY + 6, 128, 0) };
+    Shape em[1] = { hexs(BT_CX, 262, 92, 0) };
     FillOpt o = { 0 };
     o.outline = 2.0f;
-    o.opacity = 0.16f;
+    o.opacity = 0.13f;
     Paint hp = paint_solid(rc_hex(ART_HONEY, 1));
     cv_fill(&cv, &xf, em, 1, &hp, &o);
-    Shape em2[1] = { hexs(HT_CX, HT_CY + 6, 120, 0) };
+    Shape em2[1] = { hexs(BT_CX, 262, 85, 0) };
     o.outline = 1.0f;
-    o.opacity = 0.10f;
+    o.opacity = 0.08f;
     cv_fill(&cv, &xf, em2, 1, &hp, &o);
-    art_bee(&cv, HT_CX + 6, HT_CY + 150 + oy, 30, -0.08f, 0.10f, 0);
+    art_bee(&cv, BT_CX + 4, 262 + oy, 26, -0.08f, 0.08f, 0);
 }
 
 /* ---- start-up interface -------------------------------------------------------- */
@@ -656,7 +669,7 @@ void holdem_art_finish(void)
     for (int p = 0; p < HPART_N; p++) g_part[p] = atlas_spr(g_part_id[p]);
     if (g_table_px) {
         Image img = { g_table_px, PLAY_W, PLAY_H, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
-        g_table = texreg_load_image("holdem table 1280x720", img);
+        g_table = texreg_load_image("blackjack table 1280x720", img);
         SetTextureFilter(g_table, TEXTURE_FILTER_POINT);
         free(g_table_px);
         g_table_px = NULL;

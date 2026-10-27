@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md
 cmake_minimum_required(VERSION 3.18)
-project(BeesePokerLounge C)
+project(BeeseBlackjack C)
 
 # The whole tree is portable C11 plus POSIX, for aarch64 (the Pi) and x86-64
 # (development under WSL). Extensions are off so nothing GNU-only sneaks in;
@@ -46,17 +46,13 @@ add_subdirectory(engine)
 
 # Other modules are owned by other people; each only has to drop its own
 # CMakeLists.txt in place and it is picked up here without editing this file.
-foreach(dir games/blackjack platform games/draw games/holdem ai audio render)
+foreach(dir games/blackjack platform audio render)
   if(EXISTS ${CMAKE_SOURCE_DIR}/${dir}/CMakeLists.txt)
     add_subdirectory(${dir})
   endif()
 endforeach()
 
 add_subdirectory(tests)
-
-# Evaluator benchmark, so eval speed can be measured on the Pi itself.
-add_executable(bench_eval tools/bench_eval.c)
-target_link_libraries(bench_eval PRIVATE bpl_engine)
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/tools/CMakeLists.txt)
   add_subdirectory(tools)

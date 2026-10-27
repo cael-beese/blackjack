@@ -70,7 +70,7 @@ typedef struct {
 
 void marquee_init(Marquee *m, int intro);
 void marquee_update(Marquee *m, float dt);
-/* The title sign "Beese's Poker Lounge", centred at (cx, cy); scale 1 = 820 px wide. */
+/* The title sign "Beese's BLACKJACK", centred at (cx, cy); scale 1 = 820 px wide. */
 void marquee_draw(const Marquee *m, float cx, float cy, float scale);
 int  marquee_take_cue(Marquee *m);   /* 1 if a flicker started since the last call */
 
