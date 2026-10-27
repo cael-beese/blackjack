@@ -220,9 +220,9 @@ static void draw_side_bets(const MenuViewInfo *v, double t)
     text_draw_ex(FONT_DISP_M, dv_chips(v->pot, n1, sizeof n1), h.x + h.width - 8, h.y + 20 - 36 * 0.56f, 36, &ts);
     snprintf(b, sizeof b, "%d CREDITS A HAND, ON SEVENS:", BJ_HONEY_BET);
     text_at(FONT_UI_M, b, h.x + 8, h.y + 52, 16, (Color){ 230, 210, 180, 255 }, ALIGN_LEFT);
-    text_at(FONT_UI_M, "THREE SUITED 7S WIN THE POT   -   THREE 7S SAME COLOUR 500:1   -   THREE 7S 100:1", h.x + 8, h.y + 74, 15,
+    text_at(FONT_UI_M, "THREE SUITED 7S WIN THE POT   -   THREE 7S SAME COLOUR 750:1   -   THREE 7S 150:1", h.x + 8, h.y + 74, 15,
             (Color){ 255, 200, 120, 255 }, ALIGN_LEFT);
-    text_at(FONT_UI_M, "TWO SUITED 7S 50:1   -   TWO 7S 25:1   -   A 7 FIRST 3:1", h.x + 8, h.y + 94, 15,
+    text_at(FONT_UI_M, "TWO SUITED 7S 75:1   -   TWO 7S 40:1   -   A 7 FIRST 4:1", h.x + 8, h.y + 94, 15,
             (Color){ 255, 200, 120, 255 }, ALIGN_LEFT);
 }
 

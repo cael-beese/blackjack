@@ -63,7 +63,7 @@ int bj_213_outcome(Card a, Card b, Card up);
    fixed odds "to 1". BJ_HONEY_FEED of every bet goes into the pot. */
 #define BJ_HONEY_BET    5
 #define BJ_HONEY_FEED   1
-#define BJ_HONEY_SEED   10000
+#define BJ_HONEY_SEED   20000
 enum { HP_NONE, HP_ONE_SEVEN, HP_TWO_SEVENS, HP_TWO_SUITED, HP_THREE, HP_THREE_COLOUR, HP_JACKPOT, HP_N };
 extern const int bj_hp_pays[HP_N];             /* JACKPOT's entry is 0: it pays the pot */
 int bj_hp_outcome(Card a, Card b, Card up);

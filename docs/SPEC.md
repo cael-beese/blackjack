@@ -52,13 +52,13 @@ Exact returns over a six-deck shoe (tests/blackjack/test_bj_rules.c):
 
 | HONEY POT (5 credits; sevens in order: card 1, card 2, up card) | pays |
 |---|---|
-| three suited sevens | the pot (at least 10,000) |
-| three sevens of one colour | 500:1 |
-| three sevens | 100:1 |
-| two suited sevens | 50:1 |
-| two sevens | 25:1 |
-| a seven first | 3:1 |
-| **return** | 51.9% fixed + the pot (55.1% at the seed); 1 credit of every 5 feeds the pot |
+| three suited sevens | the pot (at least 20,000) |
+| three sevens of one colour | 750:1 |
+| three sevens | 150:1 |
+| two suited sevens | 75:1 |
+| two sevens | 40:1 |
+| a seven first | 4:1 |
+| **return** | 71.5% fixed + the pot (77.9% at the seed); 1 credit of every 5 feeds the pot, so about 98% in all |
 
 The pot is won about once in 62,700 hands. It is kept in the save file and
 fed by every HONEY POT bet at the table, the regulars' too.

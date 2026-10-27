@@ -3,7 +3,7 @@
 
 const int bj_pp_pays[PP_N] = { 0, 6, 12, 25 };
 const int bj_213_pays[T213_N] = { 0, 5, 10, 30, 40, 100 };
-const int bj_hp_pays[HP_N] = { 0, 3, 25, 50, 100, 500, 0 };
+const int bj_hp_pays[HP_N] = { 0, 4, 40, 75, 150, 750, 0 };
 
 BjTotal bj_total(const Card *c, int n)
 {

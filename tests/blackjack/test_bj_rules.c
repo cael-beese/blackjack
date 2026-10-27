@@ -84,5 +84,7 @@ int main(void)
     CHECK(fabs(pp - pp_exact) < 1e-12);
     CHECK(t3 > 0.90 && t3 < 1.0);
     CHECK(hp_seed > 0.5 && hp_seed < 1.0);
+    /* With the share every bet feeds the pot, the HONEY POT stays under 100%. */
+    CHECK(hp_seed + (double)BJ_HONEY_FEED / BJ_HONEY_BET < 1.0);
     return test_finish("bj_rules");
 }

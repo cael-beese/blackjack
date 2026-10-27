@@ -1272,7 +1272,7 @@ void table_present_update(const TableViewInfo *v, const GameEvent *ev, int nev, 
     static int takeover_env = -1;
     if (takeover_env < 0) takeover_env = getenv("BJ_TAKEOVER") != NULL;
     if (takeover_env && g && !P.cel.active && P.time > 3.0f) {
-        celeb_start(&P.cel, WIN_JACKPOT, 10000, "HONEY POT!", (Vector2){ 640, 380 });
+        celeb_start(&P.cel, WIN_JACKPOT, BJ_HONEY_SEED, "HONEY POT!", (Vector2){ 640, 380 });
         celeb_set_label(&P.cel, "HONEY POT PAYS");
     }
     celeb_update(&P.cel, sdt, dt);
