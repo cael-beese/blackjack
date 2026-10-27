@@ -46,7 +46,7 @@ add_subdirectory(engine)
 
 # Other modules are owned by other people; each only has to drop its own
 # CMakeLists.txt in place and it is picked up here without editing this file.
-foreach(dir platform games/draw games/holdem ai audio render)
+foreach(dir games/blackjack platform games/draw games/holdem ai audio render)
   if(EXISTS ${CMAKE_SOURCE_DIR}/${dir}/CMakeLists.txt)
     add_subdirectory(${dir})
   endif()
