@@ -390,7 +390,7 @@ static void place_bets(BjGame *g, Wallet *w, EventQueue *out)
             for (int i = 0; i < BJ_SIDE_N; i++) stake(g, s, i, g->side[i], w, out);
         } else if (st->kind == BJ_SEAT_BOT) {
             int64_t side[BJ_SIDE_N];
-            int64_t b = bj_bot_bet(st->bot, &st->mem, g->cfg.min_bet, g->cfg.max_bet, &g->bot_rng, side);
+            int64_t b = bj_bot_bet(st->bot, &st->mem, g->cfg.min_bet, g->cfg.max_bet, g->pot, &g->bot_rng, side);
             if (b <= 0) continue;
             stake(g, s, BJ_BET_MAIN, b, w, out);
             for (int i = 0; i < BJ_SIDE_N; i++) stake(g, s, i, side[i], w, out);

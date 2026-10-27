@@ -67,11 +67,11 @@ fed by every HONEY POT bet at the table, the regulars' too.
 
 | | style | play | bets |
 |---|---|---|---|
-| STINGER | the pro | basic strategy | flat 50 |
-| HONEY | hunches | stands on 12 and up, doubles 11, splits aces and eights | 10-50, often Perfect Pairs |
+| STINGER | the pro | basic strategy | flat 50; the HONEY POT only once the pot reaches 30,000 |
+| HONEY | hunches | stands on 12 and up, doubles 11, splits aces and eights | 10-50; Perfect Pairs and the HONEY POT two rounds in three |
 | BUZZ | hothead | basic strategy, doubles every soft hand he can | lets a win ride once; always the HONEY POT |
 | QUEENIE | high roller | basic strategy, always insures | 100-500, every side bet |
-| DRONE | the mimic | hits to 17 like the dealer, never doubles or splits | flat 20 |
+| DRONE | the mimic | hits to 17 like the dealer, never doubles or splits | flat 20; the HONEY POT every other round |
 
 A regular who runs out of chips leaves; the next on the bench sits down
 after a few rounds, and the one who left buys back in later. The service

@@ -27,16 +27,22 @@ static int64_t clamp_bet(int64_t b, int64_t min, int64_t max, int64_t bank)
 
 static int64_t pick(Rng *r, const int64_t *opts, int n) { return opts[rng_below(r, (uint32_t)n)]; }
 
-int64_t bj_bot_bet(int bot, const BjBotMemory *m, int64_t min, int64_t max, Rng *r, int64_t side[BJ_SIDE_N])
+int64_t bj_bot_bet(int bot, const BjBotMemory *m, int64_t min, int64_t max, int64_t pot, Rng *r,
+                   int64_t side[BJ_SIDE_N])
 {
     for (int i = 0; i < BJ_SIDE_N; i++) side[i] = 0;
     int64_t want = min;
     switch (bot) {
-    case BOT_STINGER: want = 50; break;
+    case BOT_STINGER:
+        want = 50;
+        /* A side bet is a bad bet - until the pot on the sign is big enough to chase. */
+        if (pot >= BJ_PRO_CHASE) side[BJ_SIDE_HONEY] = BJ_HONEY_BET;
+        break;
     case BOT_HONEY: {
         static const int64_t o[] = { 10, 20, 20, 50 };
         want = pick(r, o, 4);
         if (rng_below(r, 3)) side[BJ_SIDE_PP] = 10;
+        if (rng_below(r, 3)) side[BJ_SIDE_HONEY] = BJ_HONEY_BET;     /* she has a feeling about sevens */
         break;
     }
     case BOT_BUZZ:
@@ -53,12 +59,15 @@ int64_t bj_bot_bet(int bot, const BjBotMemory *m, int64_t min, int64_t max, Rng 
         side[BJ_SIDE_HONEY] = BJ_HONEY_BET;
         break;
     }
-    case BOT_DRONE: want = 20; break;
+    case BOT_DRONE:
+        want = 20;
+        if (rng_below(r, 2)) side[BJ_SIDE_HONEY] = BJ_HONEY_BET;
+        break;
     case BOT_DEMO: {
         static const int64_t o[] = { 20, 50, 50, 100 };
         want = pick(r, o, 4);
         if (!rng_below(r, 3)) side[BJ_SIDE_213] = 10;
-        if (!rng_below(r, 2)) side[BJ_SIDE_HONEY] = BJ_HONEY_BET;
+        side[BJ_SIDE_HONEY] = BJ_HONEY_BET;
         break;
     }
     }
