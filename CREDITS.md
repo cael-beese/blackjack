@@ -3,7 +3,7 @@
 ## Audio
 
 Every sound and every piece of music in `assets/sfx/` and `assets/music/` is
-**original**, made for Beese's Poker Lounge, and is under **the same license as
+**original**, made for Beese's Poker Lounge (and reused here), and is under **the same license as
 the game** (PolyForm Noncommercial 1.0.0, see `LICENSE.md`). No samples,
 recordings, sound libraries or third-party audio were used.
 

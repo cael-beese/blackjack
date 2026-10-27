@@ -5,7 +5,7 @@
 # display back to EmulationStation. Run it ON the Pi (as pi, which has
 # passwordless sudo), detached from the SSH session:
 #
-#   setsid -f nohup tools/cabinet_run.sh ./build-drm/platform/beese-poker --frames 600 \
+#   setsid -f nohup tools/cabinet_run.sh ./build-drm/platform/beese-blackjack --frames 600 \
 #       > run.log 2>&1 < /dev/null
 #
 # What it does:

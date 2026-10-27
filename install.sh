@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md
 #
-# install.sh - build Beese's Poker Lounge on a Raspberry Pi and install it,
+# install.sh - build Beese's Blackjack on a Raspberry Pi and install it,
 # with a RetroPie "Ports" entry when RetroPie is there.
 #
 #   ./install.sh               install (or update: it is safe to run again)
@@ -9,7 +9,7 @@
 #   ./install.sh --uninstall   remove the program and the Ports entry
 #                              (--purge also deletes credits / stats / settings)
 #
-# Options: --prefix DIR (default /opt/beese-poker), --no-deps, --no-boot-config.
+# Options: --prefix DIR (default /opt/beese-blackjack), --no-deps, --no-boot-config.
 #
 # Run it as the user who plays (pi on RetroPie), from the source tree; it
 # uses sudo for the steps that need root. Works on Debian 13 RetroPie and
@@ -19,12 +19,12 @@
 #   1. installs the build dependencies that are missing (apt)
 #   2. builds raylib for KMS/DRM (tools/fetch_raylib.sh drm; skipped if built)
 #   3. builds the game: -DBPL_PLATFORM=DRM -DBPL_NATIVE=ON, in build-drm/
-#   4. installs PREFIX/beese-poker, PREFIX/assets/ and PREFIX/config.ini (an
+#   4. installs PREFIX/beese-blackjack, PREFIX/assets/ and PREFIX/config.ini (an
 #      existing config.ini is kept; the new default goes next to it as
 #      config.ini.default)
-#   5. RetroPie: ~/RetroPie/roms/ports/Beese's Poker Lounge.sh, which starts
+#   5. RetroPie: ~/RetroPie/roms/ports/Beese's Blackjack.sh, which starts
 #      the game through runcommand like every other port, and
-#      /opt/retropie/configs/ports/beese-poker/emulators.cfg, which tells
+#      /opt/retropie/configs/ports/beese-blackjack/emulators.cfg, which tells
 #      runcommand what to run. The ROM folder may be a vfat USB stick, so the
 #      launcher is a plain file (no symlink) and does not rely on the
 #      executable bit: EmulationStation runs ports with `bash <file>`.
@@ -34,13 +34,13 @@
 #      backup, and every change is printed. An explicit setting that is
 #      already there is never edited. Nothing is added when KMS is on and no
 #      explicit CMA is set, because the overlay's own default CMA is enough.
-# Saves live in ~/.local/share/beese-poker (the SD card's ext4 root, NOT the
+# Saves live in ~/.local/share/beese-blackjack (the SD card's ext4 root, NOT the
 # vfat ROM stick: see docs/SYSTEMS.md). Uninstalling keeps them unless --purge.
 set -euo pipefail
 
-PREFIX=/opt/beese-poker
-PORT_ID=beese-poker
-LAUNCHER_NAME="Beese's Poker Lounge.sh"
+PREFIX=/opt/beese-blackjack
+PORT_ID=beese-blackjack
+LAUNCHER_NAME="Beese's Blackjack.sh"
 DRY=0
 UNINSTALL=0
 PURGE=0
@@ -114,12 +114,12 @@ RETROPIE=0
 if [ -d /opt/retropie ] && [ -d "$USER_HOME/RetroPie" ]; then RETROPIE=1; fi
 PORTS_DIR="$USER_HOME/RetroPie/roms/ports"
 PORT_CFG_DIR="/opt/retropie/configs/ports/$PORT_ID"
-SAVE_DIR="$USER_HOME/.local/share/beese-poker"
+SAVE_DIR="$USER_HOME/.local/share/beese-blackjack"
 
 # ---- uninstall ----------------------------------------------------------------
 
 if [ "$UNINSTALL" -eq 1 ]; then
-    step "Uninstalling Beese's Poker Lounge"
+    step "Uninstalling Beese's Blackjack"
     if [ -d "$PREFIX" ]; then run_root rm -rf "$PREFIX"; else say "  not installed in $PREFIX"; fi
     if [ -f "$PORTS_DIR/$LAUNCHER_NAME" ]; then run rm -f "$PORTS_DIR/$LAUNCHER_NAME"; fi
     if [ -d "$PORT_CFG_DIR" ]; then run_root rm -rf "$PORT_CFG_DIR"; fi
@@ -189,15 +189,15 @@ run "$ROOT/tools/fetch_raylib.sh" drm
 step "Building the game"
 JOBS="$(nproc 2>/dev/null || echo 4)"
 run cmake -S "$ROOT" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DBPL_PLATFORM=DRM -DBPL_NATIVE=ON
-run cmake --build "$BUILD" -j"$JOBS" --target beese-poker
-BIN="$BUILD/platform/beese-poker"
+run cmake --build "$BUILD" -j"$JOBS" --target beese-blackjack
+BIN="$BUILD/platform/beese-blackjack"
 
 # ---- 4. install -------------------------------------------------------------------
 
 step "Installing into $PREFIX"
 run_root install -d -m 755 "$PREFIX"
-run_root install -m 755 "$BIN" "$PREFIX/beese-poker.new"
-run_root mv -f "$PREFIX/beese-poker.new" "$PREFIX/beese-poker"
+run_root install -m 755 "$BIN" "$PREFIX/beese-blackjack.new"
+run_root mv -f "$PREFIX/beese-blackjack.new" "$PREFIX/beese-blackjack"
 # Assets: copied beside, then swapped in, so a cut never leaves half a folder.
 run_root rm -rf "$PREFIX/assets.new"
 run_root cp -r "$ROOT/assets" "$PREFIX/assets.new"
@@ -239,15 +239,15 @@ if [ "$RETROPIE" -eq 1 ]; then
     # vfat ignores this (and ES runs ports with bash anyway); ext4 honours it.
     if [ "$DRY" -eq 0 ]; then chmod +x "$PORTS_DIR/$LAUNCHER_NAME" 2> /dev/null || true; fi
     run_root install -d -o "$USER_NAME" -g "$(id -gn "$USER_NAME")" -m 755 "$PORT_CFG_DIR"
-    write_file user "$PORT_CFG_DIR/emulators.cfg" "$PORT_ID = \"$PREFIX/beese-poker\"
+    write_file user "$PORT_CFG_DIR/emulators.cfg" "$PORT_ID = \"$PREFIX/beese-blackjack\"
 default = \"$PORT_ID\""
     if ! grep -qs "<name>ports</name>" /etc/emulationstation/es_systems.cfg "$USER_HOME/.emulationstation/es_systems.cfg"; then
         say "  NOTE: EmulationStation has no 'ports' system yet. Install any port from"
         say "        RetroPie-Setup once (it adds the system), or add it to es_systems.cfg."
     fi
-    say "  Restart EmulationStation to see \"Beese's Poker Lounge\" under Ports."
+    say "  Restart EmulationStation to see \"Beese's Blackjack\" under Ports."
 else
-    say "  RetroPie not found; start the game with: $PREFIX/beese-poker"
+    say "  RetroPie not found; start the game with: $PREFIX/beese-blackjack"
 fi
 
 # ---- 6. boot configuration ----------------------------------------------------------
@@ -298,7 +298,7 @@ else
         say "  missing: ${ADD[*]}"
         run_root cp -p "$CONFIG" "$CONFIG.bak-$STAMP"
         BLOCK="
-# Added by Beese's Poker Lounge install.sh ($STAMP): KMS display for the game.
+# Added by Beese's Blackjack install.sh ($STAMP): KMS display for the game.
 [all]"
         for l in "${ADD[@]}"; do BLOCK="$BLOCK
 $l"; done
@@ -315,7 +315,7 @@ $l"; done
 fi
 
 step "Done"
-say "  program:  $PREFIX/beese-poker   (config: $PREFIX/config.ini)"
+say "  program:  $PREFIX/beese-blackjack   (config: $PREFIX/config.ini)"
 say "  saves:    $SAVE_DIR"
 if [ "$RETROPIE" -eq 1 ]; then say "  launcher: $PORTS_DIR/$LAUNCHER_NAME"; fi
 exit 0

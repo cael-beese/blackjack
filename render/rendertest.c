@@ -17,7 +17,7 @@
  * START: legend on/off; BACK: menu.
  *
  * For measuring on the Pi, e.g. the jackpot scene for 60 s:
- *   beese-poker --mode rendertest --script "1:RIGHT" --frames 3660 --perf-csv jp.csv
+ *   beese-blackjack --mode rendertest --script "1:RIGHT" --frames 3660 --perf-csv jp.csv
  * and with an effect off: add --fx bloom=off.
  *
  * Layer profiling (development): BPL_RT_PROFILE="0,1,2,..." runs the jackpot

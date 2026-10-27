@@ -18,10 +18,10 @@
 # directory, so the real credits are not spent.
 set -u
 
-PREFIX=${PREFIX:-/opt/beese-poker}
-BIN="$PREFIX/beese-poker"
-LAUNCHER="$HOME/RetroPie/roms/ports/Beese's Poker Lounge.sh"
-CFG=/opt/retropie/configs/ports/beese-poker/emulators.cfg
+PREFIX=${PREFIX:-/opt/beese-blackjack}
+BIN="$PREFIX/beese-blackjack"
+LAUNCHER="$HOME/RetroPie/roms/ports/Beese's Blackjack.sh"
+CFG=/opt/retropie/configs/ports/beese-blackjack/emulators.cfg
 LOCK=/tmp/bpl-display.lock
 ES_PAT='supplementary/emulationstation/emulationstation$'
 OUT="${OUT:-$PWD/out}"
@@ -58,19 +58,18 @@ for _ in $(seq 1 100); do pgrep -f "$ES_PAT" > /dev/null || break; sleep 0.1; do
 # 1. Cold start to attract, from a dropped page cache.
 sync
 echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
-XDG_DATA_HOME=/tmp/bpl-check-save "$BIN" --frames 240 2>&1 | grep -E "STARTUP|SESSION|beese-poker:" | tee "$OUT/check_coldstart.txt"
+XDG_DATA_HOME=/tmp/bpl-check-save "$BIN" --frames 240 2>&1 | grep -E "STARTUP|SESSION|beese-blackjack:" | tee "$OUT/check_coldstart.txt"
 
 # 2. RSS per mode (rss_kb is sampled every 30 frames in the CSV).
 run_mode() {
     local name="$1"; shift
     XDG_DATA_HOME=/tmp/bpl-check-save "$BIN" --lockstep --frames 1500 --perf-csv "$OUT/check_$name.csv" "$@" 2>&1 \
-        | grep -E "beese-poker:|SAVE:" | sed "s/^/$name: /"
+        | grep -E "beese-blackjack:|SAVE:" | sed "s/^/$name: /"
     awk -F, -v n="$name" 'NR > 1 && $9 > m { m = $9 } END { printf "%s: peak RSS %.1f MB\n", n, m / 1024 }' "$OUT/check_$name.csv"
 }
 run_mode attract
 run_mode menu --mode menu
-run_mode draw --mode draw --script "30:BET_MAX;120:HOLD1;130:DEAL;400:BET_MAX;500:DEAL;800:BET_MAX;900:DEAL"
-run_mode holdem --mode holdem --script "30:DEAL;300:HOLD2;500:HOLD2;700:HOLD2;900:HOLD2;1100:HOLD2;1300:HOLD2"
+run_mode table --mode table --script "30:HOLD1;40:HOLD3;60:DEAL;640:HOLD2;700:HOLD2;1100:DEAL;1700:HOLD2"
 run_mode service --mode service --script "30:HOLD1;40:HOLD1;50:HOLD1;60:DEAL"
 rm -rf /tmp/bpl-check-save
 
@@ -80,8 +79,8 @@ rm -rf /tmp/bpl-check-save
 if [ -f "$LAUNCHER" ] && [ -f "$CFG" ]; then
     cp -p "$CFG" "$CFG.check-bak"
     # runcommand evals the command, so the script's ';' must be quoted.
-    printf '%s\n' "beese-poker-check = \"$BIN --script '120:DEAL;300-320:COIN+CASH_OUT' --frames 1200\"" \
-                  'default = "beese-poker-check"' > "$CFG"
+    printf '%s\n' "beese-blackjack-check = \"$BIN --script '120:DEAL;300-320:COIN+CASH_OUT' --frames 1200\"" \
+                  'default = "beese-blackjack-check"' > "$CFG"
     # runcommand starts the command with </dev/tty, as ES gives it tty1. This
     # script runs detached, with no controlling terminal, so `script` supplies
     # a pty; without one the redirect fails, the game never starts and the
@@ -92,8 +91,8 @@ if [ -f "$LAUNCHER" ] && [ -f "$CFG" ]; then
     t1=$(date +%s.%N)
     mv -f "$CFG.check-bak" "$CFG"
     echo "round trip: launcher exit $rc after $(awk -v a="$t0" -v b="$t1" 'BEGIN { printf "%.1f", b - a }') s"
-    grep -E "STARTUP|SAVE|beese-poker:" /dev/shm/runcommand.log 2> /dev/null | sed 's/^/runcommand.log: /'
-    if grep -qE "^beese-poker: [0-9]+ frames" /dev/shm/runcommand.log 2> /dev/null; then
+    grep -E "STARTUP|SAVE|beese-blackjack:" /dev/shm/runcommand.log 2> /dev/null | sed 's/^/runcommand.log: /'
+    if grep -qE "^beese-blackjack: [0-9]+ frames" /dev/shm/runcommand.log 2> /dev/null; then
         echo "round trip: OK (the game ran under runcommand and exited)"
     else
         echo "round trip: FAILED (no game exit line in /dev/shm/runcommand.log)"

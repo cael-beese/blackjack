@@ -1,29 +1,33 @@
-# Beese's Poker Lounge
+# Beese's Blackjack
 
-**Arcade video poker and Texas Hold'em for a Raspberry Pi 4 cabinet.**
-Jacks or Better, Bonus Poker and Deuces Wild with an exact strategy hint,
-plus No-Limit Hold'em sit-and-gos against five AI regulars, all under the
-lights of a neon honey lounge. It's written in C with raylib and runs at a
-locked 60 fps on the Pi. The shuffles and odds are real, and the credits
-are free-play only.
+**Arcade blackjack for a Raspberry Pi 4 cabinet.**
+A six-deck Vegas Strip table in the neon honey lounge of
+[Beese's Poker Lounge](https://github.com/cael-beese/Poker) and
+[Beese's WILD 7'S](https://github.com/cael-beese/wild-7s): you and four bee
+regulars against the dealer, with an exact strategy hint, Perfect Pairs and
+21+3 side bets, and the HONEY POT progressive. It's written in C with
+raylib. The shuffles and odds are real, and the credits are free-play only.
 
-![The cabinet screen: a royal flush](docs/screenshots/cabinet.jpg)
+![The cabinet screen](docs/screenshots/cabinet.jpg)
 
-- **Three full-pay video poker games**: 9/6 Jacks or Better (99.54%),
-  8/5 Bonus Poker (99.17%) and full-pay Deuces Wild (100.76%), with their
-  real paytables and a real 52-card shuffle
-- **An exact strategy hint**: it works out the expected return of all 32
-  holds of *your* five cards and outlines the best one
-- **Double up** on any win: red or black, as many rounds as you dare
-- **Texas Hold'em sit-and-go**: six-handed No-Limit against five AI players,
-  each with a personality (rock, shark, maniac, fish) and tells you can read.
-  Blinds rise every 10 hands, and 1st to 3rd are paid
-- **Jackpot presentation**: royal-flush and monster-pot takeovers, coin
-  showers, bloom, a live marquee and chasing bulbs
+- **Vegas Strip rules**: six decks, the dealer stands on soft 17 and peeks for
+  blackjack, blackjack pays 3 to 2, double on any two cards and after a
+  split, split to four hands, late surrender, insurance. Basic strategy
+  returns **99.6%** (measured over 300,000 rounds)
+- **An exact strategy hint**: it works out the expected value of every play
+  your hand allows against the dealer's up card, and lights the best one. It
+  agrees with the published six-deck chart on all 300 two-card decisions
+- **The bee regulars**: Stinger plays by the book, Honey never risks a bust,
+  Buzz lets his wins ride, Queenie bets big and insures everything, and
+  Drone plays like the dealer. They come and go as their chips do
+- **Side bets with their real paytables**: Perfect Pairs (25 / 12 / 6, a
+  93.89% return) and 21+3 (100 / 40 / 30 / 10 / 5, 95.38%)
+- **The HONEY POT**: 5 credits a hand on sevens; three suited sevens take the
+  pot, which every bet at the table feeds and the save file keeps. It plays
+  out as a full takeover, and the table waits for it
 - **Built for the cabinet**: the 1280x720 game is shown 2x on a 3440x1440
-  ultrawide, with the Pi's display controller doing the scaling. It runs as
-  its own RetroPie Port, keeps power-cut-safe saves, and has an operator's
-  service menu
+  ultrawide, with the side art in the margins. It runs as its own RetroPie
+  Port, keeps power-cut-safe saves, and has an operator's service menu
 
 ---
 
@@ -31,16 +35,14 @@ are free-play only.
 
 | | |
 |---|---|
-| ![Attract](docs/screenshots/attract.jpg) | ![Menu](docs/screenshots/menu.jpg) |
-| **Attract**: the machine shows itself off between players | **Choose your game**: every key cap shows where its button is on the panel |
-| ![Strategy hint](docs/screenshots/draw-hint.jpg) | ![Royal flush](docs/screenshots/royal-flush.jpg) |
-| **The strategy hint**: the best hold of your five cards, and what it is worth | **ROYAL FLUSH**: the takeover |
-| ![Royal count](docs/screenshots/royal-count.jpg) | ![Double up](docs/screenshots/double-up.jpg) |
-| **The count-up** | **Double up**: red or black |
-| ![Deuces Wild](docs/screenshots/deuces-wild.jpg) | ![Hold'em](docs/screenshots/holdem.jpg) |
-| **Deuces Wild**: four deuces, the other jackpot | **Texas Hold'em**: your turn, every action on a panel button |
-| ![Showdown](docs/screenshots/holdem-showdown.jpg) | ![Monster pot](docs/screenshots/holdem-takeover.jpg) |
-| **All-in showdown** with live equities | **MONSTER POT** |
+| ![Attract](docs/screenshots/attract.jpg) | ![Lobby](docs/screenshots/lobby.jpg) |
+| **Attract**: the title and the HONEY POT between players | **The lobby**: the rules, the side bets and the regulars |
+| ![Betting](docs/screenshots/betting.jpg) | ![Hint](docs/screenshots/hint.jpg) |
+| **Betting**: every side bet on, each button labelled | **The hint**: 8-8 against a 6, split |
+| ![Split](docs/screenshots/split.jpg) | ![Split won](docs/screenshots/split-won.jpg) |
+| **Doubled after the split** | **The dealer busts** |
+| ![HONEY POT](docs/screenshots/honey-pot.jpg) | ![Demo](docs/screenshots/demo.jpg) |
+| **The HONEY POT**: three suited sevens | **The demo**: the regulars play a real round |
 | ![Controls](docs/screenshots/controls.jpg) | ![Learn panel](docs/screenshots/learn-panel.jpg) |
 | **CONTROLS**: the whole panel, lit as you press | **LEARN PANEL**: the game learns how your panel is wired |
 
@@ -51,79 +53,68 @@ button presses with `tools/readme_shots.sh`.*
 
 ## Controls
 
-The game uses the cabinet's two-player panel: on each side a stick, two rows
-of three buttons, and SELECT and START. It is a one-player game, and **both
-sides are laid out alike**, so whoever plays uses one side only, whichever
-they stand at:
+The panel has, on each side, a stick, two rows of three buttons, and SELECT
+and START. It is a one-player game, and **both sides are laid out alike**, so
+whoever plays uses one side only:
 
 ```
               EITHER SIDE  (Y X L over B A R)
-          ( )     [HOLD 1]   [HOLD 2]   [HOLD 3]
-         stick    [HOLD 4]   [HOLD 5]   [DEAL/DRAW]
+          ( )     [  HIT  ]  [ STAND ]  [ DOUBLE ]
+         stick    [ SPLIT ]  [SURRNDR]  [  DEAL  ]
                   SELECT = COIN      START = CASH OUT  (hold 3 s = SERVICE)
-         stick up = BET ONE, stick right = BET MAX
+         stick up / down = bet more / less, right = the largest bet
 ```
 
-| Control | Draw poker | Hold'em |
+| Control | Betting | Playing a hand |
 |---|---|---|
-| HOLD 1 - HOLD 5 | hold / release that card | HOLD 1 fold, HOLD 2 check / call, HOLD 3 / 4 / 5 raise ½, ¾ or 1x the pot |
-| DEAL / DRAW | deal; draw the cards not held | bet / raise the amount shown |
-| stick up | BET ONE: bet 1 more (1 to 5); while holding, the strategy hint on / off | the bet amount up (down: down) |
-| stick right | BET MAX: bet 5 and deal | all-in |
-| START | CASH OUT: back to the menu (takes a pending win); held 3 s: service menu | leave the table (press twice) |
+| HIT | Perfect Pairs: off, 5, 10, 25, 50 | hit (insurance: yes) |
+| STAND | 21+3: off, 5, 10, 25, 50 | stand (insurance: no) |
+| DOUBLE | HONEY POT on / off | double down |
+| SPLIT | bet less | split a pair |
+| SURRENDER | bet more | late surrender |
+| DEAL | deal (the bets are taken now) | |
+| stick | up / down: the bet; right: the largest bet | up: strategy hint on / off |
+| START | CASH OUT: back to the lobby (between rounds); held 3 s: service menu | |
 | SELECT | COIN: adds credits | |
 | SELECT + START | leave the game, back to EmulationStation (held together) | |
 
-In the menu, HOLD 1-4 pick the game, HOLD 5 turns the strategy hint on or
-off, and DEAL plays. After a win, HOLD 1 offers a double up; in the double
-up, HOLD 1-2 call red, HOLD 4-5 call black and HOLD 3 takes the win.
-
-**You never have to remember this.** Every button on the screen carries a
-small drawing of the panel with its position lit, and "PRESS DEAL" shows
-where DEAL is. The menu's **CONTROLS** page draws the whole panel with what
-each button does, and lights whatever you press. It opens by itself the
-first time someone plays.
+In the lobby, HIT takes a seat, STAND turns the hint on or off, and DOUBLE
+opens the CONTROLS page. **You never have to remember this**: every button on
+screen carries a small drawing of the panel with its place lit, and its
+label changes with what it does now.
 
 **Setting up a cabinet: LEARN PANEL.** Which wire of the encoder is in which
 position depends on how a panel was built. On its first start the game
-offers to learn it. The same wizard is in the service menu (hold START for
-3 seconds). It asks for each position in turn ("PLAYER 1 SIDE:
-PRESS THE TOP LEFT BUTTON") and saves the answer in the save folder. Until
-then it assumes RetroPie's usual 6-button layout (Y X L over B A R), which
-can also be set by hand in `[panel]` of `config.ini`.
+offers to learn it; the same wizard is in the service menu (hold START for
+3 seconds). Until then it assumes RetroPie's usual layout (Y X L over
+B A R). **BUTTON MAP** (DEAL held 2 seconds on the CONTROLS page) lets a
+player put each function where they like. Both are saved in the game's own
+save folder; nothing is shared with the other cabinet games.
 
-**Your own layout: BUTTON MAP.** Hold DEAL for 2 seconds on the CONTROLS
-page (or pick BUTTON MAP in the service menu). It asks for each of one
-side's eight functions in turn ("PRESS THE BUTTON YOU WANT FOR HOLD 1"),
-gives the other side the same, and saves it; every button on the screen
-follows. It learns the panel first if that was never done. RESET BUTTON MAP
-in the service menu goes back to the layout above.
-
-**On a keyboard** (the desktop build): HOLD 1-5 are `1`-`5` (or `Z X C V B`),
-DEAL is `Enter`/`Space`, BET ONE `A`, BET MAX `S`, CASH OUT `Q`, COIN
-`Insert`, START `Home`, SERVICE `F2`. The arrows are the stick, `F1` shows
-the performance overlay, and `Esc` quits.
+**On a keyboard** (the desktop build): HIT to SURRENDER are `1`-`5` (or
+`Z X C V B`), DEAL is `Enter`/`Space`, CASH OUT `Q`, COIN `Insert`, SERVICE
+`F2`. The arrows are the stick, `F1` shows the performance overlay, and
+`Esc` quits.
 
 ---
 
 ## Install on a RetroPie cabinet
 
-On the Pi, with RetroPie (tested on Debian 13; the installer is written to
-handle Raspberry Pi OS Bookworm too):
+On the Pi, with RetroPie (tested on Debian 13; the installer also handles
+Raspberry Pi OS Bookworm):
 
 ```sh
-git clone https://github.com/cael-beese/Poker.git BeesePokerLounge
-cd BeesePokerLounge
+git clone <this repository> BeeseBlackjack
+cd BeeseBlackjack
 ./install.sh --dry-run     # shows what it would do
 ./install.sh
 ```
 
 It installs any missing build packages, builds raylib 5.5 with our patches
-and then the game, and installs it to `/opt/beese-poker`. It adds **Beese's
-Poker Lounge** under Ports and touches no other port's files. It adds a line
-to `config.txt` only if one is missing (and keeps a backup).
-`./install.sh --uninstall` removes it. Restart EmulationStation to see the
-new entry. Details: [docs/SYSTEMS.md](docs/SYSTEMS.md).
+and then the game, and installs it to `/opt/beese-blackjack`. It adds
+**Beese's Blackjack** under Ports and touches no other port's files. Saves
+live in `~/.local/share/beese-blackjack`. `./install.sh --uninstall` removes
+it. Restart EmulationStation to see the new entry.
 
 ## Build on a desktop (Linux / WSL)
 
@@ -132,30 +123,18 @@ tools/fetch_raylib.sh desktop
 cmake -S . -B build -DBPL_PLATFORM=DESKTOP
 cmake --build build -j
 ctest --test-dir build
-build/platform/beese-poker
+build/platform/beese-blackjack
 ```
-
-## Measured on the cabinet
-
-Pi 4, 3440x1440 display, everything on:
-
-| | measured | budget |
-|---|---|---|
-| royal-flush takeover, monster-pot takeover, jackpot scene, attract | 60 fps locked, 0 missed frames, 1% low 59.2 | 1% low ≥ 55 |
-| memory | 84-85 MB in every mode | ≤ 150 MB |
-| textures | 43 MB | ≤ 64 MB |
-| draw calls | 5-6 a frame | < 100 |
-| cold start to attract | 3.3-3.6 s | ≤ 4 s |
-| heaviest AI decision | 3.7 ms | |
-
-How these were measured: [docs/PLATFORM.md](docs/PLATFORM.md) section 9a.
 
 ## Documentation
 
-- [docs/SPEC.md](docs/SPEC.md): what is being built
-- [docs/CONTRACT.md](docs/CONTRACT.md): how it fits together (engine, games, AI, presentation)
-- [docs/SYSTEMS.md](docs/SYSTEMS.md): flow and controls, credits, saves, service menu, attract, install
-- [docs/PLATFORM.md](docs/PLATFORM.md): build, display, input, tools, measurements
+- [docs/SPEC.md](docs/SPEC.md): what the game is, its rules and its returns
+- [docs/CONTRACT.md](docs/CONTRACT.md): how it fits together (engine, game, presentation, honesty)
+- [docs/SYSTEMS.md](docs/SYSTEMS.md): flow, credits, saves, service menu, attract, install
+- [docs/PLATFORM.md](docs/PLATFORM.md): build, display, input, tools, measuring
+
+The platform layer (display, input, panel, saves, audio, the render kit) is
+shared with Beese's Poker Lounge, from which this game was started.
 
 ## License
 

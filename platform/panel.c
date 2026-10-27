@@ -285,7 +285,7 @@ int panel_format(char *out, int n, const PanelWire w[PS_COUNT], int learned, int
                  const int8_t *fn)
 {
     int p = snprintf(out, (size_t)n,
-                     "; Beese's Poker Lounge - where each panel button is wired, and what it does\n"
+                     "; Beese's Blackjack - where each panel button is wired, and what it does\n"
                      "; (see platform/panel.h). Written by the game; LEARN PANEL and BUTTON MAP in\n"
                      "; the service menu rewrite it.\n"
                      "learned = %d\nmapped = %d\nwizard_offered = %d\ncontrols_shown = %d\n",

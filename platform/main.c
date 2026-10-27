@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md */
-/* main.c - beese-poker: display bring-up and the main loop.
+/* main.c - beese-blackjack: display bring-up and the main loop.
  *
  * One iteration = one rendered frame:
  *   1. sample input (raylib polled the devices at the end of the last frame)
@@ -96,10 +96,10 @@ int main(int argc, char **argv)
 #endif
     if (o.vsync) SetConfigFlags(FLAG_VSYNC_HINT);
     int64_t t_before_init = perf_now_ns();
-    InitWindow(w, h, "Beese's Poker Lounge");
+    InitWindow(w, h, "Beese's Blackjack");
     int64_t t_window = perf_now_ns();
     if (!IsWindowReady()) {
-        fprintf(stderr, "beese-poker: could not open the display\n");
+        fprintf(stderr, "beese-blackjack: could not open the display\n");
         return 1;
     }
     SetExitKey(KEY_NULL);   /* exits go through the input config (ESC, SELECT+START) */
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
     texreg_add_texture("raylib default font", GetFontDefault().texture);
     int plane = BplDrmPlaneActive();
     if (o.screen.present == PRESENT_PLANE && !plane)
-        fprintf(stderr, "beese-poker: present = plane unavailable, composing on the GPU\n");
+        fprintf(stderr, "beese-blackjack: present = plane unavailable, composing on the GPU\n");
     screen_init(&o.screen, plane, w, h);
     joy_init();
     Input in;
@@ -138,12 +138,12 @@ int main(int argc, char **argv)
     int64_t t_app = perf_now_ns();
 
     if (o.perf_csv && perf_csv_open(o.perf_csv) != 0) {
-        fprintf(stderr, "beese-poker: cannot write %s\n", o.perf_csv);
+        fprintf(stderr, "beese-blackjack: cannot write %s\n", o.perf_csv);
         return 1;
     }
 
     const ScreenLayout *L = screen_layout();
-    fprintf(stderr, "beese-poker: %dx%d%s%s, play %dx%d at %d,%d (%.2fx, %s, %s), seed %016llx, config %s\n",
+    fprintf(stderr, "beese-blackjack: %dx%d%s%s, play %dx%d at %d,%d (%.2fx, %s, %s), seed %016llx, config %s\n",
             L->screen_w, L->screen_h, probed ? " on " : "", probed ? di.connector : "",
             (int)L->play.width, (int)L->play.height, (int)L->play.x, (int)L->play.y, L->scale,
             L->point ? "point" : "bilinear", L->plane ? "display-plane scaling" : "GPU compose",
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
         if (o.frames && frame >= o.frames) break;
     }
 
-    fprintf(stderr, "beese-poker: %llu frames, %llu ticks, mean frame %.3f ms, RSS %.1f MB, textures %.2f MB\n",
+    fprintf(stderr, "beese-blackjack: %llu frames, %llu ticks, mean frame %.3f ms, RSS %.1f MB, textures %.2f MB\n",
             (unsigned long long)frame, (unsigned long long)ctx.tick,
             frame > 1 ? sum_frame_ms / (double)(frame - 1) : 0.0, perf_rss_kb() / 1024.0,
             texreg_bytes() / (1024.0 * 1024.0));

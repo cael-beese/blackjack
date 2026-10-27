@@ -81,17 +81,17 @@ int session_config_set(const char *key, const char *value)
     return -1;
 }
 
-/* The default save directory: $XDG_DATA_HOME/beese-poker, else
- * ~/.local/share/beese-poker. On the cabinet that is the SD card's ext4 root
+/* The default save directory: $XDG_DATA_HOME/beese-blackjack, else
+ * ~/.local/share/beese-blackjack. On the cabinet that is the SD card's ext4 root
  * filesystem, where fsync and rename mean what they say - deliberately not
  * the ROM stick, which is vfat (no atomic rename-over, weak fsync). */
 static void default_save_dir(char *out, size_t cap)
 {
     const char *xdg = getenv("XDG_DATA_HOME");
     const char *home = getenv("HOME");
-    if (xdg && xdg[0] == '/') snprintf(out, cap, "%s/beese-poker", xdg);
-    else if (home && home[0]) snprintf(out, cap, "%s/.local/share/beese-poker", home);
-    else snprintf(out, cap, "./beese-poker-save");
+    if (xdg && xdg[0] == '/') snprintf(out, cap, "%s/beese-blackjack", xdg);
+    else if (home && home[0]) snprintf(out, cap, "%s/.local/share/beese-blackjack", home);
+    else snprintf(out, cap, "./beese-blackjack-save");
 }
 
 static int is_dir(const char *p)

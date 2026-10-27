@@ -16,7 +16,7 @@
 #include "platform/fx_settings.h"
 
 static const char *const g_usage =
-    "usage: beese-poker [options]\n"
+    "usage: beese-blackjack [options]\n"
     "  --config FILE        settings file (default: config.ini next to the binary)\n"
     "  --mode NAME          start state: attract menu table service gputest rendertest\n"
     "  --seed HEX           session seed (default: OS entropy)\n"

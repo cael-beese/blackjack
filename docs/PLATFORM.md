@@ -1,7 +1,13 @@
 <!-- SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 - see LICENSE.md -->
 # Platform: build, run, measure, plug in
 
-The platform is the executable `beese-poker`: display bring-up, the fixed-step
+> This platform layer came from Beese's Poker Lounge unchanged apart from
+> the game modes. Sections 9 and 9a are Poker Lounge's measurements on the
+> cabinet with this same platform; Blackjack's own numbers are to be measured
+> there (tools/cabinet_systems_check.sh), and the poker modes named below
+> (draw, holdem) are now the one `table` mode.
+
+The platform is the executable `beese-blackjack`: display bring-up, the fixed-step
 main loop, input, the app state machine, the F1 overlay, the texture registry
 and the perf / screenshot / script tooling that every later milestone uses to
 see and measure its work. Code: `platform/`. Tools: `tools/`.
@@ -40,17 +46,17 @@ cmake --build build-drm -j4
 
 Measured on the cabinet (Pi 4, -j4): raylib 20-24 s per variant (49 s on the
 first, cold build), the platform from clean 21 s. The binary is
-`build-*/platform/beese-poker`; the build copies `platform/config.ini` next to it.
+`build-*/platform/beese-blackjack`; the build copies `platform/config.ini` next to it.
 
 ## 2. Run
 
 Desktop, headless:
 
 ```sh
-xvfb-run -a -s "-screen 0 1280x720x24" build-desktop/platform/beese-poker --lockstep \
+xvfb-run -a -s "-screen 0 1280x720x24" build-desktop/platform/beese-blackjack --lockstep \
     --frames 200 --shot 60:out/attract.png
 # the cabinet's layout at desktop resolution:
-xvfb-run -a -s "-screen 0 3440x1440x24" build-desktop/platform/beese-poker --size 3440x1440 \
+xvfb-run -a -s "-screen 0 3440x1440x24" build-desktop/platform/beese-blackjack --size 3440x1440 \
     --frames 40 --shot 30:screen:out/ultrawide.png
 ```
 
@@ -62,8 +68,8 @@ SSH session (a plink call chained to a background job can hang):
 
 ```sh
 ssh pi@<pi-address>        # or: plink -batch -pwfile <pwfile> pi@<pi-address> '...'
-cd /path/to/BeesePokerLounge
-setsid -f nohup tools/cabinet_run.sh build-drm/platform/beese-poker --frames 3600 \
+cd /path/to/BeeseBlackjack
+setsid -f nohup tools/cabinet_run.sh build-drm/platform/beese-blackjack --frames 3600 \
     --mode gputest --perf-csv out/gpu.csv > run.log 2>&1 < /dev/null
 ```
 
@@ -115,7 +121,7 @@ not exist in GPU memory, so `screen:` captures the play space too.
 Example, a reproducible demo capture:
 
 ```sh
-beese-poker --lockstep --seed C0FFEE --frames 200 \
+beese-blackjack --lockstep --seed C0FFEE --frames 200 \
   --script "30:DEAL;60:DOWN;90:UP;100:OK;130:HOLD1;140:HOLD3;150-170:HOLD5" \
   --shot 20:out/attract.png,70:out/menu.png,160:out/draw.png
 ```
@@ -348,7 +354,7 @@ Builds: raylib 20-24 s per variant (49 s cold); the platform from clean 21 s.
 
 ## 9a. The finished game on the cabinet (2026-09-23)
 
-Installed with `./install.sh` to `/opt/beese-poker`, launched as its own Port.
+Installed with `./install.sh` to `/opt/beese-blackjack`, launched as its own Port.
 Same hardware as above; EmulationStation stopped for the runs, every run a
 fresh save directory, `tools/perf_summary.py --skip 120`.
 

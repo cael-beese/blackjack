@@ -3,24 +3,24 @@
 #
 # readme_shots.sh - the screenshots in README.md, as JPEGs in
 # docs/screenshots/. Desktop build under Xvfb (never the cabinet); every
-# frame is the real game from a seed and a --script of button presses, like
-# tools/draw_shots.sh, which this runs first for the Draw Poker scenes.
+# frame is the real game from a seed and a --script of button presses. The
+# scenes that need particular cards (a split, the HONEY POT) stack the shoe
+# with BJ_TEST_SHOE, which exists in the desktop build only.
 #
 #   tools/readme_shots.sh [build-dir]        (default: build)
 #
-# Needs xvfb-run and ImageMagick's convert.
+# Run from anywhere; the game finds assets/ from the source root. Needs
+# xvfb-run and ImageMagick's convert.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 B=${1:-build}
-BIN="$B/platform/beese-poker"
+BIN="$B/platform/beese-blackjack"
 T=out/readme
 D=docs/screenshots
 mkdir -p "$T" "$D"
 [ -x "$BIN" ] || { echo "no $BIN - build first" >&2; exit 1; }
 
-tools/draw_shots.sh "$B" "$T" > "$T/draw_shots.log"
-
-run() {    # run <name> <beese-poker args...>
+run() {    # run <name> <beese-blackjack args...>
     local name=$1; shift
     export XDG_DATA_HOME
     XDG_DATA_HOME=$(mktemp -d)
@@ -28,39 +28,40 @@ run() {    # run <name> <beese-poker args...>
     rm -rf "$XDG_DATA_HOME"
 }
 
-# The menu with CONTROLS chosen, and the CONTROLS page with HOLD 2 held.
-run controls --mode menu --frames 200 \
-    --script "10:BET_ONE;14:BET_ONE;18:BET_ONE;22:BET_ONE;30:DEAL;100-190:HOLD2" \
-    --shot "26:$T/menu_controls.png,150:$T/controls.png"
-# Hold'em: the first decision; then CHECK / CALL (HOLD 2) every second, so
-# the hand plays on to the flop, turn and river.
-C="10:DEAL"; for i in $(seq 0 24); do C="$C;$((420 + i * 60)):HOLD2"; done
-run holdem --mode holdem --seed 5EED --frames 1900 --script "$C" \
-    --shot "400:$T/holdem_turn.png,1450:$T/holdem_later.png,1880:$T/holdem_later2.png"
-# The Hold'em hand-of-the-night takeover (the perf test hook).
-BPL_HOLDEM_TAKEOVER=1 run holdem_takeover --mode holdem --frames 400 --script "10:DEAL" \
-    --shot "300:$T/holdem_takeover.png,360:$T/holdem_takeover2.png"
+# Attract: the title card, then the demo table.
+run attract --mode attract --frames 1460 --shot "300:$T/attract.png,1450:$T/demo.png"
+# The lobby, and the CONTROLS page with STAND held.
+run lobby --mode menu --frames 260 --script "150:HOLD3;200-250:HOLD2" --shot "100:$T/lobby.png,240:$T/controls.png"
+# Betting with every side bet on.
+run betting --mode table --seed 5EED --frames 60 --script "10:HOLD1;14:HOLD2;18:HOLD3;22:UP;26:UP" --shot "50:$T/betting.png"
+# 8-8 against a 6 with the hint on: split, double both, the dealer busts.
+# Deal order: the four regulars and the player, the up card, again, the hole.
+export BJ_TEST_SHOE="Ts Th 8s Qd Kd 6h 9c 8c 8d 7c Ks Tc 3c Td 2d 9s 7h"
+run split --mode menu --seed 77 --frames 1150 \
+    --script "10:HOLD2;30:HOLD1;50:HOLD1;70:DEAL;620:HOLD4;690:HOLD3;760:HOLD3" \
+    --shot "600:$T/hint.png,800:$T/split.png,1050:$T/split_won.png"
+# Three suited sevens: the HONEY POT.
+export BJ_TEST_SHOE="Ts Th 7h Qd Kd 7h 9c 8c 7h 7c Ks Tc"
+run honey --mode table --seed 78 --frames 600 --script "20:HOLD3;40:DEAL" --shot "520:$T/honey_pot.png"
+unset BJ_TEST_SHOE
 # The LEARN PANEL wizard, from the service menu (14 lines down, DEAL).
 S=""; for i in $(seq 0 13); do S="$S;$((10 + i * 4)):HOLD2"; done
 run learn --mode service --frames 120 --script "${S#;};80:DEAL" --shot "110:$T/learn_panel.png"
 # The whole cabinet screen: 3440x1440, the play space 2x with the side art.
-run cabinet --size 3440x1440 --mode draw --seed 107CA4 --frames 200 \
-    --script "30:DEAL;80:HOLD1;84:HOLD2;88:HOLD3;92:HOLD4;96:HOLD5;110:DEAL" --shot "190:screen:$T/cabinet.png"
+run cabinet --size 3440x1440 --mode table --seed 5EED --frames 640 --script "40:DEAL" --shot "620:screen:$T/cabinet.png"
 
 jpg() {    # jpg <source.png> <name> [resize]
     convert "$1" ${3:+-resize "$3"} -strip -quality 86 "$D/$2.jpg"
 }
-jpg "$T/attract_title.png" attract
-jpg "$T/menu.png" menu
+jpg "$T/attract.png" attract
+jpg "$T/demo.png" demo
+jpg "$T/lobby.png" lobby
 jpg "$T/controls.png" controls
-jpg "$T/hint.png" draw-hint
-jpg "$T/royal_takeover.png" royal-flush
-jpg "$T/royal_count.png" royal-count
-jpg "$T/double_guess.png" double-up
-jpg "$T/deuces_jackpot.png" deuces-wild
-jpg "$T/holdem_turn.png" holdem
-jpg "$T/holdem_later2.png" holdem-showdown
-jpg "$T/holdem_takeover.png" holdem-takeover
+jpg "$T/betting.png" betting
+jpg "$T/hint.png" hint
+jpg "$T/split.png" split
+jpg "$T/split_won.png" split-won
+jpg "$T/honey_pot.png" honey-pot
 jpg "$T/learn_panel.png" learn-panel
 jpg "$T/cabinet.png" cabinet 1720x720
 ls -la "$D"

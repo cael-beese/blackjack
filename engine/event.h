@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 /* engine/event.h - what happened, for presentation and audio to react to.
-   Event type numbers: engine 0-99, draw 100-199, holdem 200-299, app 300-399.
+   Event type numbers: engine 0-99, blackjack 100-199, (200-299 free), app 300-399.
    The meaning of a, b and v is defined by each event type. */
 typedef struct { uint16_t type; int16_t a, b; int32_t v; } GameEvent;
 typedef struct { GameEvent e[256]; int n; } EventQueue;   /* cleared each tick by the app */

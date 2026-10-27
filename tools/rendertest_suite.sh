@@ -19,7 +19,7 @@
 # config is used, so the cabinet's buttons cannot change a scene mid-run.
 set -u
 cd "$(dirname "$0")/.." || exit 1
-BIN=build-drm/platform/beese-poker
+BIN=build-drm/platform/beese-blackjack
 OUT=out/suite
 SECS=${SECONDS_PER_RUN:-60}
 FRAMES=$(( (SECS + 1) * 60 ))
@@ -107,7 +107,7 @@ tools/cabinet_run.sh "$OUT/run_all.sh"
     while IFS='|' read -r name args; do
         [ -n "$name" ] || continue
         echo "== $name ($args)"
-        grep -E '^(RENDER|STARTUP|beese-poker:)' "$OUT/$name.log" | sed 's/^/   /'
+        grep -E '^(RENDER|STARTUP|beese-blackjack:)' "$OUT/$name.log" | sed 's/^/   /'
         [ -f "$OUT/$name.csv" ] && python3 tools/perf_summary.py "$OUT/$name.csv" --skip 120 | sed 's/^/   /'
     done <<< "$RUNS"
 } > "$OUT/summary.txt"
