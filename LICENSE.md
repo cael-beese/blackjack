@@ -1,4 +1,4 @@
-Required Notice: Copyright (c) 2026 cael-beese
+Required Notice: Copyright (c) 2026 cael-beese (https://github.com/cael-beese/blackjack)
 
 # License
 
@@ -21,7 +21,7 @@ In plain terms (the license text below is what governs):
   service that is sold, rented or operated for profit, or using it inside a
   business.
 - To ask for a commercial license, contact the copyright holder through
-  its repository (open an issue asking for contact
+  <https://github.com/cael-beese/blackjack> (open an issue asking for contact
   details).
 
 ## Third-party components

@@ -104,7 +104,7 @@ On the Pi, with RetroPie (tested on Debian 13; the installer also handles
 Raspberry Pi OS Bookworm):
 
 ```sh
-git clone <this repository> BeeseBlackjack
+git clone https://github.com/cael-beese/blackjack.git BeeseBlackjack
 cd BeeseBlackjack
 ./install.sh --dry-run     # shows what it would do
 ./install.sh
