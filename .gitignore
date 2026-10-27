@@ -1,0 +1,7 @@
+build/
+build-*/
+third_party/
+out/
+*.o
+tools/audiogen/audiogen
+tools/audiogen/analyze
