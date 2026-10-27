@@ -1266,6 +1266,15 @@ void table_present_update(const TableViewInfo *v, const GameEvent *ev, int nev, 
         if (ev[i].type >= EV_BJ_PHASE && ev[i].type <= EV_BJ_CREDITS) on_event(v, &ev[i]);
     handle_presses(v, dt);
     if (P.cel.active && (v->pressed & ~(uint32_t)(BTN_DEBUG | BTN_COIN)) && !v->demo) celeb_skip(&P.cel);
+    /* Measuring (the cabinet perf pass): BJ_TAKEOVER=1 plays the HONEY POT
+       takeover over the live table again and again - the heaviest scene -
+       without touching the game. Display only; the cards are the real ones. */
+    static int takeover_env = -1;
+    if (takeover_env < 0) takeover_env = getenv("BJ_TAKEOVER") != NULL;
+    if (takeover_env && g && !P.cel.active && P.time > 3.0f) {
+        celeb_start(&P.cel, WIN_JACKPOT, 10000, "HONEY POT!", (Vector2){ 640, 380 });
+        celeb_set_label(&P.cel, "HONEY POT PAYS");
+    }
     celeb_update(&P.cel, sdt, dt);
     pfx_update(sdt);
     int big = P.cel.active && (P.cel.tier == WIN_BIG || P.cel.tier == WIN_JACKPOT);
